@@ -6,15 +6,13 @@ solution. Enabling to create a desktop client on both Linux and Windows in theor
 ## First use case: As an Admin, keep track of all the core services in form of a dashboard.
 
 1) List the core services: display heartbeat status a - just a basic view.
- +------------------------+----------------------------+
+   
  | EndPoint               | Heartbeat status           |
- +------------------------+----------------------------+
+ |------------------------|----------------------------|
  | db:/vendor@fqdn:PORT   | Online|Maintenance|Offline |
- +------------------------+----------------------------+
- | faas:/vendor@fqdn:PORT |                            |
- +------------------------+----------------------------+                                                                                                                                                                                            
+ | faas:/vendor@fqdn:PORT |                            |                                                                                                                                                                                            
  | etc...                 |                            |
- +------------------------+----------------------------+
+
 2) The operator may want to refresh the view more or less frequently than first milestone.
   - Enable refresh rate configuration
   - Apply subscription rate
