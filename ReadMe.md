@@ -1,20 +1,32 @@
-# Jelo-Mu Desktop client
+# LMA1980
 
-Due to .net MAUI not yet supported natively in Linux, using the WinFormsBlazor
-solution. Enabling to create a desktop client on both Linux and Windows in theory.
+I will use this Github page to document the incubator project I am hoping to conceive.
 
-## First use case: As an Admin, keep track of all the core services in form of a dashboard.
+## Jelo-Mu
 
-1) List the core services: display heartbeat status a - just a basic view.
-   
- | EndPoint               | Heartbeat status           |
- |------------------------|----------------------------|
- | db:/vendor@fqdn:PORT   | Online|Maintenance|Offline |
- | faas:/vendor@fqdn:PORT |                            |                                                                                                                                                                                            
- | etc...                 |                            |
+An incubator project for a distributed application model, I will attempt to write it in Rust or in C#, and any other appropriate language to work with this solution.
 
-2) The operator may want to refresh the view more or less frequently than first milestone.
-  - Enable refresh rate configuration
-  - Apply subscription rate
-  - Jelo, Copper, Silver, Electrum, Gold, Platinum and Mu
-
+The idea, is to provide a solution to normalize the compute logic between the various runtime environment the application will interact with.
+- Client layer:
+   - Web: Html + Javascript + Css + WASM (WASI Component)[API client]
+   - GUI: <Framework> + WASM (WASI Component)[API client]
+   - both: Support OpenTelemetry
+- Backend layer:
+   - OAuth X.x authentication mechanism
+   - Role based access control
+### Idea's for the backend layer:
+1. Shared queues/messages with multi-tenancy support
+2. Use Rust+Apache Fory to create a distributed shared memory system 
+   - [mem-cluster][tenant][mem-addr][fory blob][with role access policy]
+   - support mutliple protocol: http2, http3, raw socket, GRPC...
+   - the memory doesn't exists necessarily on the same host
+   - support transaction
+3. Support OpenTelemetry
+4. A Role Policy management system
+   - cluster-wide policy: useful for system operator
+     - client-side
+     - backend-side
+   - tenant-wide policy: useful for tenant operator
+     - client-side
+     - backend-side 
+   - feature policy: provided by engineer, engineer may define policy that apply to cluster-wide capability or tenant-wide capability.
