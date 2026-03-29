@@ -2,31 +2,44 @@
 
 I will use this Github page to document the incubator project I am hoping to conceive.
 
-## Jelo-Mu
+## Jero-Mu (제로 무)
 
 An incubator project for a distributed application model, I will attempt to write it in Rust or in C#, and any other appropriate language to work with this solution.
 
-The idea, is to provide a solution to normalize the compute logic between the various runtime environment the application will interact with.
-- Client layer:
-   - Web: Html + Javascript + Css + WASM (WASI Component)[API client]
-   - GUI: <Framework> + WASM (WASI Component)[API client]
-   - both: Support OpenTelemetry
-- Backend layer:
-   - OAuth X.x authentication mechanism
-   - Role based access control
-### Idea's for the backend layer:
-1. Shared queues/messages with multi-tenancy support
-2. Use Rust+Apache Fory to create a distributed shared memory system 
-   - [mem-cluster][tenant][mem-addr][fory blob][with role access policy]
-   - support mutliple protocol: http2, http3, raw socket, GRPC...
-   - the memory doesn't exists necessarily on the same host
-   - support transaction
-3. Support OpenTelemetry
-4. A Role Policy management system
-   - cluster-wide policy: useful for system operator
-     - client-side
-     - backend-side
-   - tenant-wide policy: useful for tenant operator
-     - client-side
-     - backend-side 
-   - feature policy: provided by engineer, engineer may define policy that apply to cluster-wide capability or tenant-wide capability.
+### api.jelomu.local
+
+A Rocket (v0.6-dev) integration to provide a distributable WebAPI.
+ - /about
+    - Provides runtime information on the current runtime.
+ - Still a work in progress
+
+The goal will be to support both public and mTLS authenticated requests. [planned]
+ - The idea is to provide the end-users the guide-lines to generate CSR for gaining access.
+ - Document the steps required by the operator to support mTLS server-side.
+ - Establish usage policy.
+ - Still require to authenticate the client user with either
+    - Username / Password or Passphrase
+    - Short lived Token
+  
+Provide an authentication mechanism [planned]
+ - Use the host own public key to encrypt the password: forcing decryption by the host private key.
+ - Use a username@realm-identifier
+ - Return default role along with an associated session-token: minimal-authorized-access
+
+Provide an authorization mechanism [planned]
+ - A given user may have access to one or many role
+ - minimal-authorized-access provides the following policy
+    - get-about
+    - get-about-detailed
+    - ...
+  - anonymous-access provides the following policy (applies to tokenless requests)
+     - get-about
+     - ...
+
+### neuron-rs (neuron)
+
+A minimal distributed compute unit: the idea is to be able to support links to resources. No transport involved at this level.
+
+### neuron-runner-rs (neuron-runner)[planned]
+
+A minimal runtime environment for neurons implementation. Transport layer to be determined.
