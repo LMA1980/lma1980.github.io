@@ -43,3 +43,7 @@ A minimal distributed compute unit: the idea is to be able to support links to r
 ### neuron-runner-rs (neuron-runner)[planned]
 
 A minimal runtime environment for neurons implementation. Transport layer to be determined.
+
+## workspace-builder
+
+A tool to help compile multiple ABI targets when building a cargo project.
