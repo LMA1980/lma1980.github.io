@@ -40,6 +40,8 @@ Provide an authorization mechanism [planned]
 
 A minimal distributed compute unit: the idea is to be able to support links to resources. No transport involved at this level.
 
+[milestone-1](neuron-rs/milestone-1.md)
+
 ### neuron-runner-rs (neuron-runner)[planned]
 
 A minimal runtime environment for neurons implementation. Transport layer to be determined.
