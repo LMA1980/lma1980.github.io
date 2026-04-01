@@ -1,5 +1,3 @@
-Neuron system diagram
-```mermaid
 architecture-beta
   group neuron_runner(server)["Neuron-Runner"]
   service neuron(fa:fa-gear)["Neuron<'neurogenesis>"] in neuron_runner
@@ -13,4 +11,3 @@ architecture-beta
   neuron:R -- L:configJunction
   configJunction:R -- L:configuration_etcd
   configJunction:R -- L:configuration_consul
-```
