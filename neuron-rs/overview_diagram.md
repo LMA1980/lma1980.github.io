@@ -1,0 +1,16 @@
+Neuron system diagram
+```mermaid
+architecture-beta
+  group neuron_runner(server)["Neuron-Runner"]
+  service neuron(fa:fa-gear)["Neuron<'neurogenesis>"] in neuron_runner
+  service configuration(disk)["Local Configuration"] in neuron_runner
+  group external ["External services"]
+  service configuration_etcd(database)["Etcd"] in external
+  service configuration_consul(database)["Consul"] in external
+  junction configJunction
+
+  neuron:L -- R:configuration
+  neuron:R -- L:configJunction
+  configJunction:R -- L:configuration_etcd
+  configJunction:R -- L:configuration_consul
+```
