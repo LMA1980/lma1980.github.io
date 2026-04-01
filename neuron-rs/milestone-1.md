@@ -24,6 +24,10 @@ A minimal distributed compute unit: the idea is to be able to support links to r
   - Tracing
  
 ## Core
+
+```{r, child='/neuron-rs/overview_diagram.mmd'}
+```
+
 ### Neurogenesis
 
 The neurogenesis is the lifecycle of a typical neuron. This lifecycle guaranty interoperability with a neuron-runner.
