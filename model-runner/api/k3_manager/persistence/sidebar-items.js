@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["PersistenceError"],"struct":["BlobReferenceRecord","DerivedBlobRecord","DiagnosticReplayResult","DuckDbPersistenceStore","ModelAliasRecord","ModelBlobRecord","ModelManifestRecord","Project","SessionLastTurn","Tenant"],"trait":["CasCatalog","OptionalExt","OptionalExtension","PersistenceStore"],"type":["SqlitePersistenceStore"]};

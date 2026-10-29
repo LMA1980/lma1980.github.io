@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["Q4_K_M_BLOCK_BYTES","Q4_K_M_BLOCK_ELEMENTS"],"fn":["dequantize_q4_k_m_block","dot_product_f32_scalar","dot_product_f32_vla_stripmined","f16_to_f32_finite","rmsnorm_scalar","vec_dot_q4_k_m_scalar"],"mod":["ime"],"struct":["BaselineKernel"],"trait":["VectorKernel"]};

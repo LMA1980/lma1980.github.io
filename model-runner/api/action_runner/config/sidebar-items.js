@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["IsolationMode"],"fn":["is_safe_repo_name"],"struct":["WorkerConfig"]};

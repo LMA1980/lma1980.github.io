@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["A100_CLUSTER_MASK","A100_DEFAULT_MAX_COMPUTE_THREADS","DEFAULT_ACTIVE_CONTROL_MASK","DEFAULT_X100_COMPUTE_CAP_MASK","X100_CLUSTER_MASK","X100_DEFAULT_MAX_COMPUTE_THREADS"],"fn":["cores_from_mask","parse_affinity_spec","pin_worker_core","verify_cluster_capabilities","verify_cluster_capabilities_full","verify_cluster_capabilities_with_sim"]};

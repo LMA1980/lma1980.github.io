@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["verify_metadata_capabilities","verify_model_capabilities"],"struct":["RecipeRegistry"]};

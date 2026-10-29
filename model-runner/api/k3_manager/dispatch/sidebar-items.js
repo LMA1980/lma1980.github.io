@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["dispatch_forward_pass","wrap_input_tokens_as_arrow","wrap_logits_as_float32_array"],"struct":["ForwardPassRequest","ForwardPassResult"]};

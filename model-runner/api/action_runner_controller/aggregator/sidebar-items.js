@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["aggregate_metrics","append_logs","format_log_entries"]};

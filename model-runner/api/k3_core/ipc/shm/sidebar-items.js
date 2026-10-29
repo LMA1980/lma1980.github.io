@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_LIMIT_MEMLOCK_BYTES","DEFAULT_PAGE_SIZE"],"enum":["IpcError"],"fn":["align_to_page","recv_and_map_arena","recv_arena_fd","system_page_size"],"struct":["ArenaOptions","SharedMemoryArena"],"trait":["ArenaSocketExt"]};

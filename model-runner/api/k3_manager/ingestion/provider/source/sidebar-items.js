@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["resolve_secret_value","volatile_zeroize_bytes","volatile_zeroize_string"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["create_arrow_buffer_from_shm","slice_arrow_buffer","wrap_floats_as_float32_array","wrap_tokens_as_uint32_array"],"struct":["ShmArrowAllocation","ShmTensorViews"]};

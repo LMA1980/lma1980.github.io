@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_SOCKET_PATH"],"enum":["DispatchError"],"fn":["dispatch_single_request","handle_connection","prepare_and_bind_socket"],"struct":["KvServer","ServerConfig","SocketFileGuard"]};

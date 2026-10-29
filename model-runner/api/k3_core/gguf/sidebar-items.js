@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_ALIGNMENT","GGUF_MAGIC","GGUF_VERSION_V3"],"enum":["GgufArray","GgufMetadataValueType","GgufValue"],"fn":["align_up"],"struct":["GgufFile","ModelMetadata","TensorDescriptor"]};

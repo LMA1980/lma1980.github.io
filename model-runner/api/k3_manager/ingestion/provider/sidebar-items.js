@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["source"],"struct":["HuggingFaceAdapter","LocalFileAdapter","OllamaAdapter","SourceAdapterRegistry"]};

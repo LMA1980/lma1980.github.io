@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["WorkerCommand"],"struct":["ActiveWorker","ClusterNodeView","ClusterRegistry"]};

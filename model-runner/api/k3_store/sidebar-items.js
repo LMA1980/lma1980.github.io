@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["main","open_store","print_usage"]};
