@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FFN_DIM","MODEL_DIM","N_LAYERS"],"enum":["CalibrationShape","Lane","MatKernel"],"fn":["calibrate_matmul_rate","measure_memory_bandwidth","measure_peak_macs","partition_tiles","probe_ime_on_core","row_split_share"],"struct":["ForwardExec","ForwardModel","ForwardSummary","Matrix","PhaseLayout","PlacementPlan"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DerivedResolution","RetentionPolicy","StaleRecipeOutcome"],"fn":["check_derived_memory_admission"],"struct":["DerivedBlobManager"]};

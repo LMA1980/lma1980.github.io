@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DomainPlacementMode"],"fn":["format_cpuset_list","parse_cpuset_list","resolve_worker_compute_mask","validate_model_id"],"struct":["CgroupV2DomainController","MockCgroupFs","MockOsAffinityBackend","PlacementOutcome","RealCgroupFs","RealOsAffinityBackend"],"trait":["CgroupFs","IsolationDomainController","OsAffinityBackend"]};

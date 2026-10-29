@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AuthStatus","IngestionError","ModelFormat","SourceCredentials"],"struct":["ModelRevision","ModelVersionListing","PullArtifactSummary","PullProgress","PullRequest","RemoteModelSummary","SearchFilter","StagingDownload"],"trait":["SourceAdapter"]};

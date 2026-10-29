@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["App","default_api_base","fetch_cluster_nodes","fetch_job_log_text","fetch_jobs_list","fetch_queue_snapshot","fetch_single_job","initial_selected_job_id","request_raf","set_url_job_hash"],"struct":["AppProps"]};

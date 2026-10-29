@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_ESTIMATED_PASS_LATENCY_MS","DEFAULT_KEEP_ALIVE_INTERVAL","DEFAULT_MAX_QUEUE_DEPTH","DEFAULT_MIN_RETRY_AFTER_SECS","DEFAULT_PASSES_PER_REQUEST"],"enum":["QueueSseFrame"],"struct":["AdmissionQueueConfig","AdmissionQueueManager","ModelAdmissionQueue","QueueMetrics","QueuePermit","QueuedRequest"]};

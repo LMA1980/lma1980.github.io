@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FORY_ID_CANCEL","FORY_ID_COMPLETION","FORY_ID_DISPATCH","FORY_ID_HEARTBEAT","FORY_ID_REGISTRATION","FORY_ID_STAGE_STARTED","FORY_ID_WORKER_SHUTDOWN"],"fn":["create_fory_runtime"],"struct":["StageCancelTask","StageCompletionReport","StageDispatchTask","StageStarted","WorkerHeartbeat","WorkerRegistration","WorkerShutdown"]};

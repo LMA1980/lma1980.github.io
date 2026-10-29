@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_BROADCAST_CAPACITY","DEFAULT_RETENTION_WINDOW"],"enum":["SessionError"],"struct":["SessionRegistry","SessionState"]};

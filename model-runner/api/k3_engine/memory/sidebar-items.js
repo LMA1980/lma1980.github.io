@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PAGE_SIZE","KV_BLOCK_SIZE"],"fn":["calculate_footprint","calculate_footprint_with_slots","check_memory_admission","check_memory_admission_with","check_memory_admission_with_slots","system_page_size"],"struct":["MemoryFootprint","MockMemoryInspector","SystemMemoryInspector"],"trait":["MemoryInspector"]};

@@ -17,7 +17,16 @@ Public repositories composing the solution:
 - [**k3-core**](https://github.com/LMA1980/k3-core) — Foundational core abstractions, quantization types (`QuantType`), zero-copy tensor views (`TensorView`), single-prompt execution contexts, and structured platform diagnostics (`K3Error`).
 - [**k3-kv**](https://github.com/LMA1980/k3-kv) — Policy-free context memory holder daemon managing bounded `mlock` shared-memory arenas and passing arena file descriptors over Unix Domain Sockets (`SCM_RIGHTS`) to survive worker restarts.
 - [**k3-engine**](https://github.com/LMA1980/k3-engine) — Low-level compute runtime implementing unified VLA RVV 1.0 vector loops, A100 IME matrix acceleration, thread-group synchronization, and paged KV cache allocation.
-- [**k3-manager**](https://github.com/LMA1980/k3-manager) — Orchestration daemon and control plane handling session state in SQLite, IPC serialization over Unix Domain Sockets + shared memory, and modular OpenAI/Anthropic compatible APIs.
+- [**k3-manager**](https://github.com/LMA1980/k3-manager) — Orchestration daemon and control plane handling session state and content-addressed model catalogs in DuckDB, IPC serialization over Unix Domain Sockets + shared memory, and modular OpenAI/Anthropic compatible APIs.
+
+### Documentation Portal
+
+Complete architectural, developer, and operator documentation for the Model-Runner ecosystem is published in the portal:
+
+- [**Model Runner Documentation Portal**](model-runner/) — Comprehensive portal landing page.
+- **End-User Guides**: [Quickstart Guide](model-runner/quickstart.md) | [Full Reference Manual](model-runner/manual.md)
+- **Operator Runbooks**: [Deployment & Maintenance Guide](model-runner/deployment.md) | [Troubleshooting Guide](model-runner/troubleshooting.md) | [Hardware Tuning Guide](model-runner/tuning.md)
+- **Architecture & API**: [Crate Reference Guides](model-runner/docs/crates/) | [Rustdoc API Reference](model-runner/api/)
 
 ---
 

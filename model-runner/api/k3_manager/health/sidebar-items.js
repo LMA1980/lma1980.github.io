@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["RecoveryAction","RecoveryTarget"],"struct":["HealthSupervisor","HealthSupervisorConfig","RecoveryAuditEvent"]};

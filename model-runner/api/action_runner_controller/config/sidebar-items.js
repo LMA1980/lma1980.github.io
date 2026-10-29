@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["is_safe_repo_name"],"struct":["Config"]};
