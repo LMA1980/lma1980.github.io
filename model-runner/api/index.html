@@ -226,10 +226,10 @@
     </nav>
     <h1>
       Unified Rustdoc API Reference
-      <span class="badge">14 Crates Index</span>
+      <span class="badge">17 Crates Index</span>
     </h1>
     <p class="subtitle">
-      Machine-generated Rust API reference documentation covering all 11 library crates and 3 binary executables across the Model-Runner ecosystem and ActionRunner CI suite on SpacemiT Key Stone K3 (16 RISC-V cores).
+      Machine-generated Rust API reference documentation covering library crates and binary executables across the Model-Runner ecosystem, ActionRunner CI suite, and MuObserve distributed observability fabric on SpacemiT Key Stone K3 (16 RISC-V cores).
     </p>
     <div class="search-container">
       <input type="text" id="crateSearch" class="search-input" placeholder="Filter crates by name, role, or keyword..." autocomplete="off">
@@ -478,6 +478,60 @@
           <div class="crate-links">
             <a class="btn btn-primary" href="./action_runner_web/index.html">Rustdoc API &rarr;</a>
             <a class="btn btn-secondary" href="../docs/crates/action-runner-web.md">Architecture Guide</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Category 5: Distributed Observability, Regression Analytics & AI MCP -->
+    <section class="category-section" data-category="observability">
+      <h2 class="category-title">
+        <span>Distributed Observability, Regression Analytics &amp; AI MCP</span>
+        <span class="category-count">3 Crates</span>
+      </h2>
+      <div class="grid">
+        <!-- muobserve_ipc -->
+        <article class="card" data-tags="muobserve ipc framing arrow otel trace fory wire protocol regression w3c secretredactor">
+          <div class="card-header">
+            <span class="crate-name">muobserve_ipc</span>
+            <span class="crate-tag">lib</span>
+          </div>
+          <p class="crate-desc">
+            Shared zero-copy 24-byte wire framing (<code>*b"MUOB"</code>), Apache Arrow columnar batch schemas (logs, spans, metrics, test runs, benchmarks), W3C trace context, zero-ReDoS secret scrubbing, and Apache Fory RPC envelopes.
+          </p>
+          <div class="crate-links">
+            <a class="btn btn-primary" href="./muobserve_ipc/index.html">Rustdoc API &rarr;</a>
+            <a class="btn btn-secondary" href="../docs/crates/muobserve-ipc.md">Architecture Guide</a>
+          </div>
+        </article>
+
+        <!-- muobserve_collector -->
+        <article class="card" data-tags="muobserve collector edge daemon otlp arrow wal ringbuffer mtls step-ca isolation sandbox">
+          <div class="card-header">
+            <span class="crate-name">muobserve_collector</span>
+            <span class="crate-tag">lib / daemon</span>
+          </div>
+          <p class="crate-desc">
+            Sandboxed node-level edge telemetry collector daemon with loopback OTLP HTTP and <code>MUOB</code> Arrow IPC ingestion, streaming secret scrubbing, bounded 256 MiB ring-buffer WAL, step-ca mTLS forwarding, and MuIsolation KernelSandbox confinement.
+          </p>
+          <div class="crate-links">
+            <a class="btn btn-primary" href="./muobserve_collector/index.html">Rustdoc API &rarr;</a>
+            <a class="btn btn-secondary" href="../docs/crates/muobserve-collector.md">Architecture Guide</a>
+          </div>
+        </article>
+
+        <!-- muobserve -->
+        <article class="card" data-tags="muobserve backend duckdb parquet lake regression mcp antigravity tools mtls views analytics">
+          <div class="card-header">
+            <span class="crate-name">muobserve</span>
+            <span class="crate-tag">lib / daemon / bin</span>
+          </div>
+          <p class="crate-desc">
+            Distributed OTEL + DuckDB/Parquet observability backend, step-ca mTLS SAN-bound ingestion, 3-tier storage lake (7-day hot DuckDB + cold Zstd Parquet + unified views), hardware-stratified regression engine, and Antigravity MCP server (10 tools).
+          </p>
+          <div class="crate-links">
+            <a class="btn btn-primary" href="./muobserve/index.html">Rustdoc API &rarr;</a>
+            <a class="btn btn-secondary" href="../docs/crates/muobserve.md">Architecture Guide</a>
           </div>
         </article>
       </div>

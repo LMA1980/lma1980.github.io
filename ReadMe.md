@@ -58,6 +58,16 @@ Comprehensive architectural specifications, security models, and developer guide
 
 ______________________________________________________________________
 
+## MuObserve Distributed Observability & Antigravity MCP (Milestone 3)
+
+Distributed OpenTelemetry collection, 3-tier DuckDB/Parquet telemetry lake, hardware-stratified regression analytics, and native Antigravity AI Model Context Protocol (MCP) server:
+
+- [**MuObserve Crate Architecture Guide**](model-runner/docs/crates/muobserve.md) — Centralized ingestion server with zero-trust `step-ca` mTLS SAN identity binding, 3-tier storage architecture (7-day `hot.duckdb` + Hive-partitioned cold Zstd Parquet + unified `v_*` views), hardware-stratified regression engine isolating X100 ($VLEN=256$) from A100 ($VLEN=1024$), rolling 30-day test flakiness scoring, and Antigravity MCP server with 10 analytical tools.
+- [**MuObserve-collector Architecture Guide**](model-runner/docs/crates/muobserve-collector.md) — Sandboxed edge telemetry collector daemon supporting loopback OTLP HTTP (`/v1/traces`, `/v1/metrics`, `/v1/logs`) and native `MUOB` Arrow IPC streams, streaming zero-ReDoS secret redaction, bounded 256 MiB ring-buffer WAL with 3-tier priority eviction, and `MuIsolation` `KernelSandbox` confinement.
+- [**MuObserve-ipc Wire & Schema Reference**](model-runner/docs/crates/muobserve-ipc.md) — Zero-copy 24-byte `IpcHeader` wire framing (`*b"MUOB"`), Apache Arrow columnar schemas for logs, spans, metrics, test runs, and benchmarks, W3C `traceparent` context propagation, and Apache Fory RPC control envelopes.
+
+______________________________________________________________________
+
 ## Incubator Projects
 
 Documentation for incubator projects and early-stage prototypes.

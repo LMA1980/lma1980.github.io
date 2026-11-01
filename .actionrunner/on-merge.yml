@@ -6,7 +6,7 @@ stages:
     name: "Verify Documentation Portal Structure & Links"
     tags: ["docs"]
     threads: 2
-    run: "test -f ReadMe.md && test -f _config.yml && test -f model-runner/index.md && test -f model-runner/quickstart.md && test -f model-runner/manual.md && test -f model-runner/deployment.md && test -f model-runner/troubleshooting.md && test -f model-runner/tuning.md && test -f model-runner/api/index.html && test -f content/docs/index.md && test -f content/docs/actionrunner-syntax.md && test -f content/docs/isolation-model.md && test -f content/docs/muregist-guide.md && test -f content/docs/muconde-guide.md"
+    run: "test -f ReadMe.md && test -f _config.yml && test -f model-runner/index.md && test -f model-runner/quickstart.md && test -f model-runner/manual.md && test -f model-runner/deployment.md && test -f model-runner/troubleshooting.md && test -f model-runner/tuning.md && test -f model-runner/api/index.html && test -f content/docs/index.md && test -f content/docs/actionrunner-syntax.md && test -f content/docs/isolation-model.md && test -f content/docs/muregist-guide.md && test -f content/docs/muconde-guide.md && test -f model-runner/docs/crates/muobserve-ipc.md && test -f model-runner/docs/crates/muobserve-collector.md && test -f model-runner/docs/crates/muobserve.md"
 
   - id: privacy-hygiene
     name: "Verify Public Topology Privacy Boundary"
