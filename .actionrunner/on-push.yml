@@ -1,0 +1,16 @@
+version: "2"
+name: "lma1980.github.io Portal Pipeline: Documentation Integrity & Hygiene"
+
+stages:
+  - id: docs-integrity
+    name: "Verify Documentation Portal Structure & Links"
+    tags: ["docs"]
+    threads: 2
+    run: "test -f ReadMe.md && test -f _config.yml && test -f model-runner/index.md && test -f model-runner/quickstart.md && test -f model-runner/manual.md && test -f model-runner/deployment.md && test -f model-runner/troubleshooting.md && test -f model-runner/tuning.md && test -f model-runner/api/index.html"
+
+  - id: privacy-hygiene
+    name: "Verify Public Topology Privacy Boundary"
+    tags: ["docs"]
+    depends_on: ["docs-integrity"]
+    threads: 2
+    run: "! grep -rnEi 'entrance|rubicon|pey-wail-deu|192\\.168\\.|lab\\.local' ReadMe.md model-runner/ neuron-rs/"

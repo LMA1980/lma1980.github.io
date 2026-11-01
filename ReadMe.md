@@ -1,5 +1,20 @@
 # LMA1980
 
+<p align="center">
+  <a href="https://hook.lma1980.duckdns.org/jobs">
+    <img src="https://hook.lma1980.duckdns.org/cards/LMA1980/lma1980.github.io/card.svg" alt="lma1980.github.io Factory Scorecard" width="520"/>
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/lma1980.github.io/status.svg" alt="CI Status"/></a>
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/lma1980.github.io/score.svg" alt="Quality Score"/></a>
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/lma1980.github.io/coverage.svg" alt="Coverage"/></a>
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/lma1980.github.io/benchmark.svg" alt="Benchmark"/></a>
+</p>
+
+---
+
 Welcome to the project portal for open-source systems, native RISC-V solutions, and software incubators.
 
 ## ActionRunner Solution

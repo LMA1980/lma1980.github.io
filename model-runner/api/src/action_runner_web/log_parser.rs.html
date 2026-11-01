@@ -158,7 +158,7 @@
 <a href=#158 id=158 data-nosnippet>158</a>    }
 <a href=#159 id=159 data-nosnippet>159</a>
 <a href=#160 id=160 data-nosnippet>160</a>    <span class="comment">// If no legacy steps were found, parse distributed runner logs:
-<a href=#161 id=161 data-nosnippet>161</a>    // Format: "2026-10-24T12:31:24.898184+00:00 [rubicon] [clippy-check] [stderr] Updating crates.io index"
+<a href=#161 id=161 data-nosnippet>161</a>    // Format: "2026-10-24T12:31:24.898184+00:00 [storage-node] [clippy-check] [stderr] Updating crates.io index"
 <a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">if </span>steps.is_empty() {
 <a href=#163 id=163 data-nosnippet>163</a>        pre_lines.clear();
 <a href=#164 id=164 data-nosnippet>164</a>        <span class="kw">use </span>std::collections::BTreeMap;
@@ -317,22 +317,22 @@
 <a href=#317 id=317 data-nosnippet>317</a>
 <a href=#318 id=318 data-nosnippet>318</a>    <span class="attr">#[test]
 <a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">fn </span>test_parse_distributed_cluster_log() {
-<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">let </span>sample = <span class="string">"2026-10-24T12:31:24.898184+00:00 [rubicon] [clippy-check] [stderr] Updating crates.io index\n2026-10-24T12:31:26.491124+00:00 [rubicon] [clippy-check] [stderr] Locking packages\n2026-10-24T12:39:19.894462+00:00 [pey-wail-deu] [native-k3] [stdout] running 4 tests\n2026-10-24T12:39:19.903154+00:00 [pey-wail-deu] [native-k3] [stdout] test result: ok. 4 passed\n"</span>;
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">let </span>sample = <span class="string">"2026-10-24T12:31:24.898184+00:00 [storage-node] [clippy-check] [stderr] Updating crates.io index\n2026-10-24T12:31:26.491124+00:00 [storage-node] [clippy-check] [stderr] Locking packages\n2026-10-24T12:39:19.894462+00:00 [worker-riscv64] [native-k3] [stdout] running 4 tests\n2026-10-24T12:39:19.903154+00:00 [worker-riscv64] [native-k3] [stdout] test result: ok. 4 passed\n"</span>;
 <a href=#321 id=321 data-nosnippet>321</a>        <span class="kw">let </span>parsed = parse_job_log(sample);
 <a href=#322 id=322 data-nosnippet>322</a>        <span class="macro">assert_eq!</span>(parsed.steps.len(), <span class="number">2</span>);
 <a href=#323 id=323 data-nosnippet>323</a>        <span class="macro">assert_eq!</span>(parsed.steps[<span class="number">0</span>].name, <span class="string">"clippy-check"</span>);
-<a href=#324 id=324 data-nosnippet>324</a>        <span class="macro">assert!</span>(parsed.steps[<span class="number">0</span>].command.contains(<span class="string">"rubicon"</span>));
+<a href=#324 id=324 data-nosnippet>324</a>        <span class="macro">assert!</span>(parsed.steps[<span class="number">0</span>].command.contains(<span class="string">"storage-node"</span>));
 <a href=#325 id=325 data-nosnippet>325</a>        <span class="macro">assert_eq!</span>(parsed.steps[<span class="number">1</span>].name, <span class="string">"native-k3"</span>);
 <a href=#326 id=326 data-nosnippet>326</a>        <span class="macro">assert_eq!</span>(
 <a href=#327 id=327 data-nosnippet>327</a>            parsed.steps[<span class="number">1</span>].command,
-<a href=#328 id=328 data-nosnippet>328</a>            <span class="string">"Host: pey-wail-deu (Distributed Stage)"
+<a href=#328 id=328 data-nosnippet>328</a>            <span class="string">"Host: worker-riscv64 (Distributed Stage)"
 <a href=#329 id=329 data-nosnippet>329</a>        </span>);
 <a href=#330 id=330 data-nosnippet>330</a>        <span class="macro">assert_eq!</span>(parsed.steps[<span class="number">1</span>].status, StepStatus::Passed);
 <a href=#331 id=331 data-nosnippet>331</a>    }
 <a href=#332 id=332 data-nosnippet>332</a>
 <a href=#333 id=333 data-nosnippet>333</a>    <span class="attr">#[test]
 <a href=#334 id=334 data-nosnippet>334</a>    </span><span class="kw">fn </span>test_extract_stage_logs_and_step0() {
-<a href=#335 id=335 data-nosnippet>335</a>        <span class="kw">let </span>sample = <span class="string">"Job log initializing\n2026-10-24T12:00:00+00:00 [pey-wail-deu] [step-0] [stdout] Git submodule updated\n2026-10-24T12:00:01+00:00 [pey-wail-deu] [step-2] [stdout] Running clippy\n"</span>;
+<a href=#335 id=335 data-nosnippet>335</a>        <span class="kw">let </span>sample = <span class="string">"Job log initializing\n2026-10-24T12:00:00+00:00 [worker-riscv64] [step-0] [stdout] Git submodule updated\n2026-10-24T12:00:01+00:00 [worker-riscv64] [step-2] [stdout] Running clippy\n"</span>;
 <a href=#336 id=336 data-nosnippet>336</a>        <span class="kw">let </span>(step0, stage_logs) = extract_stage_logs(sample);
 <a href=#337 id=337 data-nosnippet>337</a>        <span class="macro">assert_eq!</span>(step0.len(), <span class="number">2</span>);
 <a href=#338 id=338 data-nosnippet>338</a>        <span class="macro">assert!</span>(step0[<span class="number">0</span>].contains(<span class="string">"Job log initializing"</span>));
