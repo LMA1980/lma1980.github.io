@@ -13,7 +13,7 @@
   <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/lma1980.github.io/benchmark.svg" alt="Benchmark"/></a>
 </p>
 
----
+______________________________________________________________________
 
 Welcome to the project portal for open-source systems, native RISC-V solutions, and software incubators.
 
@@ -29,6 +29,7 @@ Lightweight, native GitHub Webhook CI execution sidecar and real-time observabil
 High-performance, distributed AI inference runtime and control plane engineered specifically for the SpacemiT Key Stone K3 SoC (16 heterogeneous RISC-V cores across general-purpose and vector/matrix clusters, 32 GB unified memory). Built around cycle-exclusive execution, systemd cgroup isolation, and hardware-accelerated RVV 1.0 / IME compute kernels.
 
 Public repositories composing the solution:
+
 - [**k3-core**](https://github.com/LMA1980/k3-core) — Foundational core abstractions, quantization types (`QuantType`), zero-copy tensor views (`TensorView`), single-prompt execution contexts, and structured platform diagnostics (`K3Error`).
 - [**k3-kv**](https://github.com/LMA1980/k3-kv) — Policy-free context memory holder daemon managing bounded `mlock` shared-memory arenas and passing arena file descriptors over Unix Domain Sockets (`SCM_RIGHTS`) to survive worker restarts.
 - [**k3-engine**](https://github.com/LMA1980/k3-engine) — Low-level compute runtime implementing unified VLA RVV 1.0 vector loops, A100 IME matrix acceleration, thread-group synchronization, and paged KV cache allocation.
@@ -43,7 +44,19 @@ Complete architectural, developer, and operator documentation for the Model-Runn
 - **Operator Runbooks**: [Deployment & Maintenance Guide](model-runner/deployment.md) | [Troubleshooting Guide](model-runner/troubleshooting.md) | [Hardware Tuning Guide](model-runner/tuning.md)
 - **Architecture & API**: [Crate Reference Guides](model-runner/docs/crates/) | [Rustdoc API Reference](model-runner/api/)
 
----
+______________________________________________________________________
+
+## Jero-Mu Platform Architecture & Milestone 2 Guides
+
+Comprehensive architectural specifications, security models, and developer guides for the Milestone 2 (*Declarative Configuration, Isolation & Continuous Delivery*) platform:
+
+- [**Jero-Mu Milestone 2 Documentation Portal**](content/docs/index.md) — Central portal landing page and architectural index.
+- [**Declarative ActionRunner.yml Syntax Reference**](content/docs/actionrunner-syntax.md) — Complete 3-tier pipeline schema (`tasks`, `stages`, `on_action`), compile-time `ToolAdapter` registry, DAG cycle detection, and 3-phase configuration migration.
+- [**MuIsolation Dual-Backend Sandbox Model**](content/docs/isolation-model.md) — 3-layer monotonic privilege attenuation ($\\text{Ceiling} \\cap \\text{Desired} \\cap \\text{Task}$), fail-closed `SecurityGrantDenied`, Landlock/cgroupv2/seccomp `KernelSandbox`, and KVM microVM `HypervisorSandbox`.
+- [**MuRegist Cargo Sparse Registry Guide**](content/docs/muregist-guide.md) — RFC 2789 Cargo Sparse HTTP Index protocol, SHA-256 CAS, DuckDB metadata catalog, and canary release promotion API with `step-ca` mTLS authentication.
+- [**MuConDe Continuous Delivery A/B Deployment Guide**](content/docs/muconde-guide.md) — Declarative `.muconde/MuConDe.yml` contracts, idle cluster lease negotiation, Btrfs `@a`/`@b` subvolume snapshots, atomic symlink swaps, post-swap health watchdog, and sub-second rollback.
+
+______________________________________________________________________
 
 ## Incubator Projects
 
@@ -56,32 +69,36 @@ An incubator project for a distributed application model, I will attempt to writ
 #### api.jelomu.local
 
 A Rocket (v0.6-dev) integration to provide a distributable WebAPI.
- - /about
-    - Provides runtime information on the current runtime.
- - Still a work in progress
+
+- /about
+  - Provides runtime information on the current runtime.
+- Still a work in progress
 
 The goal will be to support both public and mTLS authenticated requests. [planned]
- - The idea is to provide the end-users the guide-lines to generate CSR for gaining access.
- - Document the steps required by the operator to support mTLS server-side.
- - Establish usage policy.
- - Still require to authenticate the client user with either
-    - Username / Password or Passphrase
-    - Short lived Token
-  
+
+- The idea is to provide the end-users the guide-lines to generate CSR for gaining access.
+- Document the steps required by the operator to support mTLS server-side.
+- Establish usage policy.
+- Still require to authenticate the client user with either
+  - Username / Password or Passphrase
+  - Short lived Token
+
 Provide an authentication mechanism [planned]
- - Use the host own public key to encrypt the password: forcing decryption by the host private key.
- - Use a username@realm-identifier
- - Return default role along with an associated session-token: minimal-authorized-access
+
+- Use the host own public key to encrypt the password: forcing decryption by the host private key.
+- Use a username@realm-identifier
+- Return default role along with an associated session-token: minimal-authorized-access
 
 Provide an authorization mechanism [planned]
- - A given user may have access to one or many role
- - minimal-authorized-access provides the following policy
-     - get-about
-     - get-about-detailed
-     - ...
-  - anonymous-access provides the following policy (applies to tokenless requests)
-     - get-about
-     - ...
+
+- A given user may have access to one or many role
+- minimal-authorized-access provides the following policy
+  - get-about
+  - get-about-detailed
+  - ...
+- anonymous-access provides the following policy (applies to tokenless requests)
+  - get-about
+  - ...
 
 #### neuron-rs (neuron)
 
