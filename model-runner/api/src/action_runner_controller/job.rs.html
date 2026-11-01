@@ -1820,10 +1820,10 @@
 <a href=#1820 id=1820 data-nosnippet>1820</a>                toolchain: <span class="prelude-val">None</span>,
 <a href=#1821 id=1821 data-nosnippet>1821</a>                depends_on: <span class="macro">vec!</span>[],
 <a href=#1822 id=1822 data-nosnippet>1822</a>                status: StageStatus::Assigned {
-<a href=#1823 id=1823 data-nosnippet>1823</a>                    node_id: <span class="string">"pey-wail-deu"</span>.to_string(),
+<a href=#1823 id=1823 data-nosnippet>1823</a>                    node_id: <span class="string">"worker-riscv64"</span>.to_string(),
 <a href=#1824 id=1824 data-nosnippet>1824</a>                    started_at: Utc::now(),
 <a href=#1825 id=1825 data-nosnippet>1825</a>                },
-<a href=#1826 id=1826 data-nosnippet>1826</a>                assigned_node: <span class="prelude-val">Some</span>(<span class="string">"pey-wail-deu"</span>.to_string()),
+<a href=#1826 id=1826 data-nosnippet>1826</a>                assigned_node: <span class="prelude-val">Some</span>(<span class="string">"worker-riscv64"</span>.to_string()),
 <a href=#1827 id=1827 data-nosnippet>1827</a>            },
 <a href=#1828 id=1828 data-nosnippet>1828</a>            StageRecord {
 <a href=#1829 id=1829 data-nosnippet>1829</a>                id: <span class="string">"stage-2"</span>.to_string(),
@@ -1833,16 +1833,16 @@
 <a href=#1833 id=1833 data-nosnippet>1833</a>                toolchain: <span class="prelude-val">None</span>,
 <a href=#1834 id=1834 data-nosnippet>1834</a>                depends_on: <span class="macro">vec!</span>[],
 <a href=#1835 id=1835 data-nosnippet>1835</a>                status: StageStatus::Assigned {
-<a href=#1836 id=1836 data-nosnippet>1836</a>                    node_id: <span class="string">"rubicon"</span>.to_string(),
+<a href=#1836 id=1836 data-nosnippet>1836</a>                    node_id: <span class="string">"storage-node"</span>.to_string(),
 <a href=#1837 id=1837 data-nosnippet>1837</a>                    started_at: Utc::now(),
 <a href=#1838 id=1838 data-nosnippet>1838</a>                },
-<a href=#1839 id=1839 data-nosnippet>1839</a>                assigned_node: <span class="prelude-val">Some</span>(<span class="string">"rubicon"</span>.to_string()),
+<a href=#1839 id=1839 data-nosnippet>1839</a>                assigned_node: <span class="prelude-val">Some</span>(<span class="string">"storage-node"</span>.to_string()),
 <a href=#1840 id=1840 data-nosnippet>1840</a>            },
 <a href=#1841 id=1841 data-nosnippet>1841</a>        ];
 <a href=#1842 id=1842 data-nosnippet>1842</a>        store.set_stages(<span class="kw-2">&amp;</span>job.id, stages).<span class="kw">await</span>;
 <a href=#1843 id=1843 data-nosnippet>1843</a>
-<a href=#1844 id=1844 data-nosnippet>1844</a>        <span class="comment">// Node pey-wail-deu restarts or disconnects:
-<a href=#1845 id=1845 data-nosnippet>1845</a>        </span><span class="kw">let </span>recovered = store.recover_stages_for_node(<span class="string">"pey-wail-deu"</span>, <span class="prelude-val">None</span>).<span class="kw">await</span>;
+<a href=#1844 id=1844 data-nosnippet>1844</a>        <span class="comment">// Node worker-riscv64 restarts or disconnects:
+<a href=#1845 id=1845 data-nosnippet>1845</a>        </span><span class="kw">let </span>recovered = store.recover_stages_for_node(<span class="string">"worker-riscv64"</span>, <span class="prelude-val">None</span>).<span class="kw">await</span>;
 <a href=#1846 id=1846 data-nosnippet>1846</a>        <span class="macro">assert_eq!</span>(
 <a href=#1847 id=1847 data-nosnippet>1847</a>            recovered,
 <a href=#1848 id=1848 data-nosnippet>1848</a>            <span class="macro">vec!</span>[(<span class="string">"job-recover-node"</span>.to_string(), <span class="string">"stage-1"</span>.to_string())]
@@ -1851,14 +1851,14 @@
 <a href=#1851 id=1851 data-nosnippet>1851</a>        <span class="kw">let </span>updated_job = store.get_job(<span class="kw-2">&amp;</span>job.id).<span class="kw">await</span>.unwrap();
 <a href=#1852 id=1852 data-nosnippet>1852</a>        <span class="macro">assert_eq!</span>(updated_job.stages[<span class="number">0</span>].status, StageStatus::Pending);
 <a href=#1853 id=1853 data-nosnippet>1853</a>        <span class="macro">assert_eq!</span>(updated_job.stages[<span class="number">0</span>].assigned_node, <span class="prelude-val">None</span>);
-<a href=#1854 id=1854 data-nosnippet>1854</a>        <span class="comment">// stage-2 on rubicon should remain untouched
+<a href=#1854 id=1854 data-nosnippet>1854</a>        <span class="comment">// stage-2 on storage-node should remain untouched
 <a href=#1855 id=1855 data-nosnippet>1855</a>        </span><span class="macro">assert!</span>(<span class="macro">matches!</span>(
 <a href=#1856 id=1856 data-nosnippet>1856</a>            updated_job.stages[<span class="number">1</span>].status,
 <a href=#1857 id=1857 data-nosnippet>1857</a>            StageStatus::Assigned { .. }
 <a href=#1858 id=1858 data-nosnippet>1858</a>        ));
 <a href=#1859 id=1859 data-nosnippet>1859</a>        <span class="macro">assert_eq!</span>(
 <a href=#1860 id=1860 data-nosnippet>1860</a>            updated_job.stages[<span class="number">1</span>].assigned_node.as_deref(),
-<a href=#1861 id=1861 data-nosnippet>1861</a>            <span class="prelude-val">Some</span>(<span class="string">"rubicon"</span>)
+<a href=#1861 id=1861 data-nosnippet>1861</a>            <span class="prelude-val">Some</span>(<span class="string">"storage-node"</span>)
 <a href=#1862 id=1862 data-nosnippet>1862</a>        );
 <a href=#1863 id=1863 data-nosnippet>1863</a>    }
 <a href=#1864 id=1864 data-nosnippet>1864</a>
@@ -2010,7 +2010,7 @@
 <a href=#2010 id=2010 data-nosnippet>2010</a>        <span class="kw">let </span>log_file = repo_logs.join(<span class="string">"job-1729500000-deadbeef.log"</span>);
 <a href=#2011 id=2011 data-nosnippet>2011</a>        std::fs::write(
 <a href=#2012 id=2012 data-nosnippet>2012</a>            <span class="kw-2">&amp;</span>log_file,
-<a href=#2013 id=2013 data-nosnippet>2013</a>            <span class="string">"2026-10-21T10:00:00Z [pey-wail-deu] [test] [stdout] running 7 tests\n2026-10-21T10:00:02Z [pey-wail-deu] [test] [stdout] test result: ok. 7 passed; 0 failed; 0 ignored\n"</span>,
+<a href=#2013 id=2013 data-nosnippet>2013</a>            <span class="string">"2026-10-21T10:00:00Z [worker-riscv64] [test] [stdout] running 7 tests\n2026-10-21T10:00:02Z [worker-riscv64] [test] [stdout] test result: ok. 7 passed; 0 failed; 0 ignored\n"</span>,
 <a href=#2014 id=2014 data-nosnippet>2014</a>        )
 <a href=#2015 id=2015 data-nosnippet>2015</a>        .expect(<span class="string">"write historical log"</span>);
 <a href=#2016 id=2016 data-nosnippet>2016</a>

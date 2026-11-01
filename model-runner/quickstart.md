@@ -76,7 +76,7 @@ k3-store list blobs
 ```
 
 #### D. Distributed Multi-Node Provisioning via Apache Arrow Flight
-In a multi-board cluster, the control plane host (`k3-manager`) ingests base weights, runs capability filtering, and repacks tensors into hardware-accelerated IME tile layouts. Tensors are streamed to accelerator nodes (`pey-wail-deu`) over Apache Arrow Flight:
+In a multi-board cluster, the control plane host (`k3-manager`) ingests base weights, runs capability filtering, and repacks tensors into hardware-accelerated IME tile layouts. Tensors are streamed to accelerator nodes (`worker-riscv64`) over Apache Arrow Flight:
 ```bash
 # On target node: k3-rpcbridge receives FlightData into anonymous memfd
 # 1. Zero disk writes (protects onboard eMMC flash endurance)

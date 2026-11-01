@@ -912,9 +912,9 @@
 <a href=#912 id=912 data-nosnippet>912</a>                                                </span>};
 <a href=#913 id=913 data-nosnippet>913</a>                                                <span class="kw">let </span>status_label = <span class="kw">if </span>node.is_online { <span class="string">"Online" </span>} <span class="kw">else </span>{ <span class="string">"Offline" </span>};
 <a href=#914 id=914 data-nosnippet>914</a>                                                <span class="kw">let </span>(icon, role) = <span class="kw">match </span>node.node_id.as_str() {
-<a href=#915 id=915 data-nosnippet>915</a>                                                    <span class="string">"entrance" </span>=&gt; (<span class="string">"🖥️"</span>, <span class="string">"Fast Linter &amp; Security Auditor (Intel N100)"</span>),
-<a href=#916 id=916 data-nosnippet>916</a>                                                    <span class="string">"rubicon" </span>=&gt; (<span class="string">"⚡"</span>, <span class="string">"Heavy Compute &amp; Cross-Compiler (HP Xeon E3-1245)"</span>),
-<a href=#917 id=917 data-nosnippet>917</a>                                                    <span class="string">"pey-wail-deu" </span>=&gt; (<span class="string">"🔬"</span>, <span class="string">"Native Truth Engine &amp; Ingress (SpacemiT K3)"</span>),
+<a href=#915 id=915 data-nosnippet>915</a>                                                    <span class="string">"node-a" </span>=&gt; (<span class="string">"🖥️"</span>, <span class="string">"Fast Linter &amp; Security Auditor (Intel N100)"</span>),
+<a href=#916 id=916 data-nosnippet>916</a>                                                    <span class="string">"storage-node" </span>=&gt; (<span class="string">"⚡"</span>, <span class="string">"Heavy Compute &amp; Cross-Compiler (HP Xeon E3-1245)"</span>),
+<a href=#917 id=917 data-nosnippet>917</a>                                                    <span class="string">"worker-riscv64" </span>=&gt; (<span class="string">"🔬"</span>, <span class="string">"Native Truth Engine &amp; Ingress (SpacemiT K3)"</span>),
 <a href=#918 id=918 data-nosnippet>918</a>                                                    <span class="kw">_ </span>=&gt; (<span class="string">"⚙️"</span>, <span class="string">"Distributed Execution Node"</span>),
 <a href=#919 id=919 data-nosnippet>919</a>                                                };
 <a href=#920 id=920 data-nosnippet>920</a>                                                <span class="kw">let </span>tags_str = node.tags.join(<span class="string">", "</span>);
@@ -1060,9 +1060,9 @@
 <a href=#1060 id=1060 data-nosnippet>1060</a>                                            }
 <a href=#1061 id=1061 data-nosnippet>1061</a>
 <a href=#1062 id=1062 data-nosnippet>1062</a>                                            <span class="kw">let </span>(icon, role) = <span class="kw">match </span>node.node_id.as_str() {
-<a href=#1063 id=1063 data-nosnippet>1063</a>                                                <span class="string">"entrance" </span>=&gt; (<span class="string">"🖥️"</span>, <span class="string">"Fast Linter &amp; Security Auditor (Intel N100)"</span>),
-<a href=#1064 id=1064 data-nosnippet>1064</a>                                                <span class="string">"rubicon" </span>=&gt; (<span class="string">"⚡"</span>, <span class="string">"Heavy Compute &amp; Cross-Compiler (HP Xeon E3-1245)"</span>),
-<a href=#1065 id=1065 data-nosnippet>1065</a>                                                <span class="string">"pey-wail-deu" </span>=&gt; (<span class="string">"🔬"</span>, <span class="string">"Native Truth Engine &amp; Ingress (SpacemiT K3)"</span>),
+<a href=#1063 id=1063 data-nosnippet>1063</a>                                                <span class="string">"node-a" </span>=&gt; (<span class="string">"🖥️"</span>, <span class="string">"Fast Linter &amp; Security Auditor (Intel N100)"</span>),
+<a href=#1064 id=1064 data-nosnippet>1064</a>                                                <span class="string">"storage-node" </span>=&gt; (<span class="string">"⚡"</span>, <span class="string">"Heavy Compute &amp; Cross-Compiler (HP Xeon E3-1245)"</span>),
+<a href=#1065 id=1065 data-nosnippet>1065</a>                                                <span class="string">"worker-riscv64" </span>=&gt; (<span class="string">"🔬"</span>, <span class="string">"Native Truth Engine &amp; Ingress (SpacemiT K3)"</span>),
 <a href=#1066 id=1066 data-nosnippet>1066</a>                                                <span class="kw">_ </span>=&gt; (<span class="string">"⚙️"</span>, <span class="string">"Distributed Execution Node"</span>),
 <a href=#1067 id=1067 data-nosnippet>1067</a>                                            };
 <a href=#1068 id=1068 data-nosnippet>1068</a>
