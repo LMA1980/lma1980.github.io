@@ -40,6 +40,7 @@ Public repositories composing the solution:
 Complete architectural, developer, and operator documentation for the Model-Runner ecosystem is published in the portal:
 
 - [**Model Runner Documentation Portal**](model-runner/) — Comprehensive portal landing page.
+- [**Public Open-Source AI Benchmark Leaderboard (`BenchLM` / `DeepEval` / `lm-eval`)**](model-runner/benchmarks.md) — Five-pillar capability leaderboard (`MMLU-Pro`, `GSM8K`, `HumanEval`, `IFEval`, `TruthfulQA`), `FP16` vs quantized fidelity deltas, and `X100` vs `A100` IME runtime efficiency scorecards.
 - **End-User Guides**: [Quickstart Guide](model-runner/quickstart.md) | [Full Reference Manual](model-runner/manual.md)
 - **Operator Runbooks**: [Deployment & Maintenance Guide](model-runner/deployment.md) | [Troubleshooting Guide](model-runner/troubleshooting.md) | [Hardware Tuning Guide](model-runner/tuning.md)
 - **Architecture & API**: [Crate Reference Guides](model-runner/docs/crates/) | [Rustdoc API Reference](model-runner/api/)
