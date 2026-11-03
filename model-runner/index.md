@@ -11,6 +11,7 @@ Model-Runner delivers cycle-exclusive execution, systemd cgroup isolation, zero-
 ### 1. End-User Guides
 Actionable walkthroughs for model ingestion, standalone benchmarking, and connecting AI clients and coding agents.
 - [**Quickstart Guide**](quickstart.md) — 5-minute onboarding walkthrough: ingesting GGUF models from Hugging Face or Ollama, evaluating inference locally with `k3-diag`, starting system services, and connecting Python SDKs, cURL, and AI coding agents (Cline, Cursor, Roo-Code).
+- [**Public Open-Source AI Benchmark Leaderboard & Scorecard**](benchmarks.md) — Standardized 100% free/open-source LLM capability matrix (`BenchLM` 5-pillar index, EleutherAI `lm-evaluation-harness`, Confident AI `DeepEval`, and `k3-diag --eval-suite`), `FP16` vs `Q8_0`/`Q4_0`/`TQ1_0` quantization fidelity deltas, and `X100` vs `A100` IME hardware efficiency scorecards.
 - [**Full Reference Manual**](manual.md) — Comprehensive technical reference: `k3-store` CLI commands, TOML configuration schema, OpenAI `/v1/chat/completions` protocol specifications, Anthropic Claude `/v1/messages` specifications, thinking blocks, tool calling, and full HTTP/CLI error mappings.
 
 ### 2. Operator Runbooks
