@@ -1,0 +1,38 @@
+version: "3"
+name: "lma1980.github.io Declarative Documentation Portal Pipeline (mdformat)"
+
+tasks:
+  docs-format-task:
+    tool: "mdformat"
+    args:
+      - "--check"
+      - "--wrap"
+      - "keep"
+      - "ReadMe.md"
+      - "content"
+      - "model-runner/benchmarks.md"
+      - "model-runner/docs/crates/index.md"
+      - "model-runner/docs/crates/muobserve-ipc.md"
+      - "model-runner/docs/crates/muobserve-collector.md"
+      - "model-runner/docs/crates/muobserve.md"
+    timeout_seconds: 300
+    sandbox_profile: "default_ci"
+
+stages:
+  - id: docs-format
+    name: "Verify Markdown Portal Formatting (mdformat)"
+    tasks: ["docs-format-task"]
+    tags: ["docs"]
+    threads: 2
+    exclusive: false
+    max_concurrent_per_node: 1
+
+on_action:
+  push:
+    - docs-format
+  pull_request:
+    - docs-format
+  merge:
+    - docs-format
+  tag:
+    - docs-format
