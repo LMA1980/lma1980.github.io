@@ -17,10 +17,24 @@ ______________________________________________________________________
 
 Welcome to the project portal for open-source systems, native RISC-V solutions, and software incubators.
 
-## ActionRunner Solution
+## ActionRunner & MuConsole Solution
 
-Lightweight, native GitHub Webhook CI execution sidecar and real-time observability suite designed for bare-metal RISC-V hardware (SpacemiT Key Stone K3). It serializes builds with event coalescing, executes automated test and hygiene pipelines, calculates factory quality scores, and serves dynamic SVG status cards.
+<p align="center">
+  <a href="https://github.com/LMA1980/MuConsole">
+    <img src="assets/logos/muconsole-vector-badge.svg" alt="MuConsole (무 / 無 — Void Console) Vector Badge (>_∅ P1+P3)" width="160"/>
+  </a>
+</p>
 
+<p align="center">
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/MuConsole/status.svg" alt="MuConsole CI Status"/></a>
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/MuConsole/score.svg" alt="MuConsole Quality Score"/></a>
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/MuConsole/coverage.svg" alt="MuConsole Coverage"/></a>
+  <a href="https://hook.lma1980.duckdns.org/jobs"><img src="https://hook.lma1980.duckdns.org/badges/LMA1980/MuConsole/benchmark.svg" alt="MuConsole Benchmark"/></a>
+</p>
+
+Lightweight, native GitHub Webhook CI execution sidecar, continuous delivery orchestrator, and real-time **"Avionics Terminal"** observability suite designed for bare-metal RISC-V hardware (SpacemiT Key Stone K3). It serializes builds with event coalescing, executes automated test and hygiene pipelines, calculates factory quality scores, and serves dynamic SVG status cards.
+
+- [**MuConsole**](https://github.com/LMA1980/MuConsole) — Unified CI/CD **Void Console** (*Mu* / `무` / `無` = Void / Null) for **ActionRunner** (continuous integration, P1 green phosphor `#4dff7a`) and **MuConDe** (continuous delivery, P3 amber phosphor `#ffb43a`). Built as a zero-scroll, SVG-first "Avionics Terminal" UI driven by two WebAssembly modules (`muconsole-ui` on the main thread and `muconsole-data` in a dedicated Web Worker communicating via versioned `postcard` frames in `muconsole-protocol`, styled by `muconsole-theme` and `muconsole-layout`). Official vector and GitHub App logo assets (`>_∅` Void Prompt, P1+P3) are published in [`assets/logos/`](assets/logos/).
 - [**ActionRunner-rs**](https://github.com/LMA1980/ActionRunner-rs) — High-performance GitHub Webhook daemon and CI execution sidecar written in Rust. Features coalescing FIFO queues, HMAC-SHA256 signature verification, automated workspace synchronization, pipeline quality scoring (`cargo llvm-cov`, `cargo clippy`, `cargo audit`, benchmarks), and dynamic SVG status cards.
 - [**ActionRunner-web**](https://github.com/LMA1980/ActionRunner-web) — WebAssembly queue monitor and job drill-down dashboard built with Leptos (CSR). Provides real-time build status, individual submodule scorecards, and step-by-step CI execution logs.
 

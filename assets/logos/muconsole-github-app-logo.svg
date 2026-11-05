@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1024" height="1024">
+  <defs>
+    <!-- Brushed Dark Tungsten Plate (mat.tungsten: #2b2d31 -> #17181b) -->
+    <linearGradient id="tungstenPlate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#32353b"/>
+      <stop offset="45%" stop-color="#23252a"/>
+      <stop offset="100%" stop-color="#121316"/>
+    </linearGradient>
+
+    <!-- Outer Bevel Highlight/Shadow (#5a5e65 / #0c0d0f) -->
+    <linearGradient id="tungstenBevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5a5e65"/>
+      <stop offset="50%" stop-color="#2b2d31"/>
+      <stop offset="100%" stop-color="#0c0d0f"/>
+    </linearGradient>
+
+    <!-- Dual Phosphor Gradient: CI P1 Green (#4dff7a) -> CD P3 Amber (#ffb43a) -->
+    <linearGradient id="dualPhosphor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4dff7a"/>
+      <stop offset="46%" stop-color="#4dff7a"/>
+      <stop offset="54%" stop-color="#ffb43a"/>
+      <stop offset="100%" stop-color="#ffb43a"/>
+    </linearGradient>
+
+    <!-- Recessed CRT Glass (#020604 - #0b1a0f & #1c1306) -->
+    <radialGradient id="crtGlass" cx="48%" cy="48%" r="60%">
+      <stop offset="0%" stop-color="#0c1c12"/>
+      <stop offset="55%" stop-color="#060c09"/>
+      <stop offset="100%" stop-color="#020302"/>
+    </radialGradient>
+
+    <!-- Satin Tungsten Horizontal Micro-Brush Pattern -->
+    <pattern id="brushLines" width="32" height="4" patternUnits="userSpaceOnUse">
+      <rect width="32" height="1" fill="#ffffff" fill-opacity="0.03"/>
+      <rect y="2" width="32" height="1" fill="#000000" fill-opacity="0.18"/>
+    </pattern>
+
+    <!-- CRT Scanline Pattern (3px pitch scaled to 512 viewBox) -->
+    <pattern id="scanlines" width="16" height="6" patternUnits="userSpaceOnUse">
+      <rect width="16" height="3" fill="#000000" fill-opacity="0.34"/>
+    </pattern>
+
+    <!-- P1 / P3 CRT Phosphor Bloom Filter -->
+    <filter id="phosphorBloom" filterUnits="userSpaceOnUse" x="0" y="0" width="512" height="512" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.65"/>
+    </filter>
+  </defs>
+
+  <!-- 1. Full-Bleed Brushed Tungsten Plate (GitHub Square / Squircle / Circle Safe) -->
+  <rect width="512" height="512" fill="url(#tungstenPlate)"/>
+  <rect width="512" height="512" fill="url(#brushLines)"/>
+
+  <!-- Subtle Recessed Outer Frame -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#tungstenBevel)" stroke-width="4" opacity="0.85"/>
+
+  <!-- 4 Corner Punched Mounting Holes (mat.punch: #050505 + lower lip #5c6067) -->
+  <g>
+    <circle cx="52" cy="52" r="11" fill="#050505" stroke="#5c6067" stroke-width="2.5"/>
+    <line x1="45" y1="52" x2="59" y2="52" stroke="#34373c" stroke-width="2.5"/>
+    <circle cx="460" cy="52" r="11" fill="#050505" stroke="#5c6067" stroke-width="2.5"/>
+    <line x1="453" y1="52" x2="467" y2="52" stroke="#34373c" stroke-width="2.5"/>
+    <circle cx="52" cy="460" r="11" fill="#050505" stroke="#5c6067" stroke-width="2.5"/>
+    <line x1="45" y1="460" x2="59" y2="460" stroke="#34373c" stroke-width="2.5"/>
+    <circle cx="460" cy="460" r="11" fill="#050505" stroke="#5c6067" stroke-width="2.5"/>
+    <line x1="453" y1="460" x2="467" y2="460" stroke="#34373c" stroke-width="2.5"/>
+  </g>
+
+  <!-- 2. Inner CRT Void Shield (Fits strictly inside GitHub's 80% Circular & Squircle Safe Area) -->
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="#0a0b0d" stroke="#5a5e65" stroke-width="3" filter="url(#softShadow)"/>
+  <rect x="54" y="54" width="404" height="404" rx="88" fill="url(#crtGlass)" stroke="url(#dualPhosphor)" stroke-width="7"/>
+
+  <!-- Subtle Internal CRT Reticle & Trainway Siding Traces -->
+  <g opacity="0.28">
+    <line x1="60" y1="244" x2="452" y2="244" stroke="#1f6b34" stroke-width="2" stroke-dasharray="6 8"/>
+    <line x1="256" y1="60" x2="256" y2="440" stroke="#6b4a12" stroke-width="2" stroke-dasharray="6 8"/>
+    <path d="M 88,128 L 148,128 L 172,152 L 340,152 L 364,128 L 424,128" fill="none" stroke="#4dff7a" stroke-width="2.5"/>
+    <path d="M 88,360 L 148,360 L 172,336 L 340,336 L 364,360 L 424,360" fill="none" stroke="#ffb43a" stroke-width="2.5"/>
+  </g>
+
+  <!-- Top Acid-Etched Plate Caption -->
+  <text x="256" y="96" text-anchor="middle" fill="#9499a1" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-weight="800" font-size="15" letter-spacing="6" opacity="0.85">MU·CONSOLE</text>
+
+  <!-- 3. Centerpiece: High-Contrast Void Prompt (>_∅) in P1 Green + P3 Amber -->
+  <!-- Left: '>' Prompt Chevron (CI P1 Green #4dff7a) -->
+  <g filter="url(#phosphorBloom)">
+    <path d="M 96,184 L 168,244 L 96,304" fill="none" stroke="#4dff7a" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Underscore '_' Cursor (CI P1 Green #4dff7a) -->
+    <rect x="174" y="290" width="62" height="24" rx="8" fill="#4dff7a"/>
+  </g>
+  <!-- Crisp High-Luminance P1 Core for Micro-Avatar Sharpness -->
+  <path d="M 96,184 L 168,244 L 96,304" fill="none" stroke="#d4ffe0" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="180" y="296" width="50" height="12" rx="4" fill="#d4ffe0"/>
+
+  <!-- Right: '∅' Null / Void Singularity (CD P3 Amber #ffb43a + Event Horizon Abyss) -->
+  <g>
+    <!-- Abyssal Void Interior -->
+    <circle cx="338" cy="240" r="76" fill="#010202"/>
+    <!-- Glowing P3 Amber Torus Ring -->
+    <circle cx="338" cy="240" r="72" fill="none" stroke="#ffb43a" stroke-width="26" filter="url(#phosphorBloom)"/>
+    <circle cx="338" cy="240" r="72" fill="none" stroke="#ffe4b5" stroke-width="7"/>
+    <!-- Dark Separation Cutouts where the Null Slash crosses the Ring (for 16x16 legibility) -->
+    <line x1="268" y1="310" x2="408" y2="170" stroke="#030604" stroke-width="36" stroke-linecap="round"/>
+    <!-- Glowing P3 Amber Null Slash -->
+    <line x1="268" y1="310" x2="408" y2="170" stroke="#ffb43a" stroke-width="22" stroke-linecap="round" filter="url(#phosphorBloom)"/>
+    <line x1="268" y1="310" x2="408" y2="170" stroke="#fff0d4" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- 4. Bottom Dual Annunciator Status Bars (P1 Green CI + P3 Amber CD) -->
+  <g filter="url(#phosphorBloom)">
+    <rect x="122" y="396" width="122" height="16" rx="8" fill="#4dff7a"/>
+    <rect x="268" y="396" width="122" height="16" rx="8" fill="#ffb43a"/>
+  </g>
+  <rect x="130" y="401" width="106" height="6" rx="3" fill="#d4ffe0" opacity="0.8"/>
+  <rect x="276" y="401" width="106" height="6" rx="3" fill="#fff0d4" opacity="0.8"/>
+
+  <!-- 5. CRT Scanline Overlay & Curved Glass Specular Sheen -->
+  <rect x="54" y="54" width="404" height="404" rx="88" fill="url(#scanlines)" pointer-events="none"/>
+  <path d="M 104,74 Q 256,94 408,74" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="6" stroke-linecap="round"/>
+</svg>
