@@ -1,5 +1,11 @@
 # Jero-Mu Milestone 2 Documentation Portal
 
+<p align="center">
+  <a href="https://github.com/LMA1980/MuConsole">
+    <img src="../../assets/logos/muconsole-vector-badge.svg" alt="MuConsole (Void Console) Vector Badge — >_∅ P1+P3" width="128"/>
+  </a>
+</p>
+
 Welcome to the documentation portal for **Jero-Mu Milestone 2** (*Declarative Configuration, Isolation & Continuous Delivery*).
 
 Milestone 2 establishes the production foundation for the distributed K3 compute fabric, introducing declarative pipeline orchestration, multi-layer kernel and hypervisor sandboxing, an internal Cargo Sparse artifact registry, and zero-downtime A/B continuous delivery.
