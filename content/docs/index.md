@@ -32,14 +32,17 @@ ______________________________________________________________________
 └──────────────────────────────────┴─────────────────────────────────────┘
 ```
 
-### 1. Declarative Pipeline Configuration
+### 1. Declarative Pipeline Configuration & Distributed Compiler Caching
 
 - [**ActionRunner.yml Syntax Reference**](actionrunner-syntax.md) (`actionrunner-syntax.md` — Issue [#10](https://github.com/LMA1980/lma1980.github.io/issues/10))
   - Complete Version 3 schema specification: `tasks`, `stages`, `on_action`, and `sccache` (`disabled`, `try`, `mandatory`).
   - Compile-time `ActionRunner-tools` `ToolAdapter` registry and strict shell metacharacter prohibition (`ProhibitedShellInvocation`).
-  - Distributed compilation caching via `sccache`: capability-aware stage scheduling (`effective_stage_tags`), pre-stage daemon health checks & S3 vs. `Local disk` hijack auto-recovery, and step-by-step operator self-service setup (`/etc/action-runner/sccache.env`).
   - Topological stage DAG resolution, cycle detection (`CycleDetected`), `exclusive: true` worker draining, and `max_concurrent_per_node: 1` single-slot execution.
   - Three-phase configuration migration strategy from legacy `.actionrunner/on-*.yml`.
+- [**Operator & Workflow Guide: Distributed `sccache` Compilation Caching**](sccache-guide.md) (`sccache-guide.md`)
+  - How `sccache` influences your CI experience: cold-cache first builds (5–10% overhead) vs. warm-cache subsequent builds (60–85% speedup), automatic `CARGO_INCREMENTAL=0` enforcement, cross-node toolchain alignment, and why `cargo-llvm-cov`/`cargo-miri` intentionally bypass caching.
+  - Step-by-step operator installation on both `x86_64`/`aarch64` (static musl releases) and `riscv64` SpacemiT K3 (native source build under the `action-runner` service account).
+  - Choosing and configuring Local Disk (`SCCACHE_DIR`) vs. Shared S3/Garage/MinIO (`SCCACHE_BUCKET`) in `/etc/action-runner/sccache.env`, daemon hijack auto-recovery, and end-to-end verification walkthroughs.
 
 ### 2. Multi-Layer Sandboxing & Isolation
 
