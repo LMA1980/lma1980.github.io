@@ -195,7 +195,19 @@ profiles:
       workspace_access: "read-write"
       allow_tmpfs: true
       read_paths:
-        - "/opt/toolchains/rust"
+        - "/usr/bin"
+        - "/usr/local/bin"
+        - "/bin"
+        - "/var/lib/action-runner/.cargo/bin"
+        - "/var/lib/action-runner/.rustup"
+        - "/var/lib/action-runner/.local/bin"
+      exec_paths:
+        - "/usr/bin"
+        - "/usr/local/bin"
+        - "/bin"
+        - "/var/lib/action-runner/.cargo/bin"
+        - "/var/lib/action-runner/.rustup"
+        - "/var/lib/action-runner/.local/bin"
     limits:
       memory_mb: 4096
       threads: 2
@@ -222,3 +234,11 @@ profiles:
     network:
       mode: "none"
 ```
+
+### 4.1 Distributed Compiler Cache (`sccache`) & Credential Isolation
+
+When `sccache` is enabled (`sccache: "try"` or `sccache: "mandatory"` in `.actionrunner/ActionRunner.yml`), `MuIsolation` and `ActionRunner-rs` enforce strict boundary separation between untrusted repository manifests and host S3/cache credentials:
+
+1. **Landlock Binary Paths**: Both `/usr/local/bin` and `/usr/bin` must be included in `read_paths` and `exec_paths` so `cargo` and `rustc` subprocesses can invoke `RUSTC_WRAPPER=sccache`.
+1. **Host-Side Credential Provisioning (`/etc/action-runner/sccache.env`)**: S3/Garage/MinIO credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SCCACHE_BUCKET`, `SCCACHE_ENDPOINT`) live exclusively on the worker host in `/etc/action-runner/sccache.env` (`0600`, `action-runner:action-runner`), never in repository manifests.
+1. **Wrapper Override Filtering**: `WorkerConfig::load_sccache_env()` strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` when reading `/etc/action-runner/sccache.env` so wrapper injection cannot be forced onto non-compilation tools (`cargo-llvm-cov`, `cargo-audit`, `cargo-fmt`, `cargo-miri`).

@@ -42,6 +42,7 @@ A valid `.actionrunner/ActionRunner.yml` document must contain the following top
 ```yaml
 version: "3"
 name: "my-project-ci"
+sccache: "try"
 env:
   RUST_BACKTRACE: "1"
 tasks:
@@ -54,14 +55,15 @@ on_action:
 
 ### Top-Level Fields
 
-| Field       | Type   | Required | Description                                                        |
-| :---------- | :----- | :------- | :----------------------------------------------------------------- |
-| `version`   | string | **Yes**  | Schema version. Must be exactly `"3"`.                             |
-| `name`      | string | **Yes**  | Human-readable name for the pipeline.                              |
-| `env`       | map    | No       | Global environment variable key-value pairs exported to all tasks. |
-| `tasks`     | map    | **Yes**  | Map of unique task IDs to `TaskSpec` definitions.                  |
-| `stages`    | list   | **Yes**  | List of `StageSpec` definitions forming the execution DAG.         |
-| `on_action` | map    | **Yes**  | Map of webhook action triggers to lists of target stage IDs.       |
+| Field       | Type   | Required | Description                                                                                             |
+| :---------- | :----- | :------- | :------------------------------------------------------------------------------------------------------ |
+| `version`   | string | **Yes**  | Schema version. Must be exactly `"3"`.                                                                  |
+| `name`      | string | **Yes**  | Human-readable name for the pipeline.                                                                   |
+| `sccache`   | string | No       | Default compilation cache policy across all eligible Rust tasks (`"disabled"`, `"try"`, `"mandatory"`). |
+| `env`       | map    | No       | Global environment variable key-value pairs exported to all tasks.                                      |
+| `tasks`     | map    | **Yes**  | Map of unique task IDs to `TaskSpec` definitions.                                                       |
+| `stages`    | list   | **Yes**  | List of `StageSpec` definitions forming the execution DAG.                                              |
+| `on_action` | map    | **Yes**  | Map of webhook action triggers to lists of target stage IDs.                                            |
 
 ______________________________________________________________________
 
@@ -77,34 +79,38 @@ tasks:
     tool: "cargo-clippy"
     args: ["--workspace", "--all-targets", "--", "-D", "warnings"]
     working_dir: "code/core"
+    sccache: "try"
     env:
       CARGO_TERM_COLOR: "always"
     timeout_seconds: 300
     sandbox_profile: "strict"
 ```
 
-| Field             | Type    | Required | Description                                                                        |
-| :---------------- | :------ | :------- | :--------------------------------------------------------------------------------- |
-| `tool`            | string  | **Yes**  | Tool identifier registered in the compile-time `ToolAdapter` registry.             |
-| `args`            | list    | No       | Explicit list of string arguments passed directly to the binary. Defaults to `[]`. |
-| `working_dir`     | string  | No       | Relative directory within the repository workspace. Defaults to repository root.   |
-| `env`             | map     | No       | Task-specific environment variable overrides.                                      |
-| `timeout_seconds` | integer | No       | Maximum execution duration before SIGTERM/SIGKILL. Defaults to `600`.              |
-| `sandbox_profile` | string  | No       | Name of the desired sandbox profile matching `.actionrunner/security.yml`.         |
+| Field             | Type    | Required | Description                                                                              |
+| :---------------- | :------ | :------- | :--------------------------------------------------------------------------------------- |
+| `tool`            | string  | **Yes**  | Tool identifier registered in the compile-time `ToolAdapter` registry.                   |
+| `args`            | list    | No       | Explicit list of string arguments passed directly to the binary. Defaults to `[]`.       |
+| `working_dir`     | string  | No       | Relative directory within the repository workspace. Defaults to repository root.         |
+| `sccache`         | string  | No       | Task-level override for compilation cache policy (`"disabled"`, `"try"`, `"mandatory"`). |
+| `env`             | map     | No       | Task-specific environment variable overrides.                                            |
+| `timeout_seconds` | integer | No       | Maximum execution duration before SIGTERM/SIGKILL. Defaults to `600`.                    |
+| `sandbox_profile` | string  | No       | Name of the desired sandbox profile matching `.actionrunner/security.yml`.               |
 
 ### Compile-Time `ToolAdapter` Registry
 
 ActionRunner invokes commands through a typed Rust `ToolAdapter` registry (`ActionRunner-tools`). Supported tools include:
 
 - `cargo-fmt`: Invokes `cargo fmt` with formatting verification (`--check`).
-- `cargo-clippy`: Invokes `cargo clippy` with workspace linting flags.
-- `cargo-check`: Runs compilation checks across target architectures.
-- `cargo-test`: Runs unit and integration test harnesses.
-- `cargo-build`: Builds release or debug binaries and shared libraries.
-- `cargo-doc`: Generates documentation and validates doc-tests.
+- `cargo-clippy`: Invokes `cargo clippy` with workspace linting flags (`sccache`-eligible).
+- `cargo-check`: Runs compilation checks across target architectures (`sccache`-eligible).
+- `cargo-test`: Runs unit and integration test harnesses (`sccache`-eligible).
+- `cargo-nextest`: Runs parallel test suites via `cargo nextest` (`sccache`-eligible).
+- `cargo-build`: Builds release or debug binaries and shared libraries (`sccache`-eligible).
+- `cargo-bench`: Compiles and runs benchmark harnesses (`sccache`-eligible).
+- `cargo-doc`: Generates documentation and validates doc-tests (`sccache`-eligible).
 - `cargo-audit`: Scans dependencies for security vulnerabilities against `advisory-db`.
-- `cargo-llvm-cov`: Computes source-based code coverage summaries.
-- `cargo-miri`: Executes test suites under Miri undefined-behavior detection.
+- `cargo-llvm-cov`: Computes source-based code coverage summaries (`sccache` never injected to preserve `-C instrument-coverage`).
+- `cargo-miri`: Executes test suites under Miri undefined-behavior detection (`sccache` never injected).
 - `git-checkout`: Synchronizes Git trees, commits, and submodules.
 - `mdformat`: Formats and checks CommonMark and GitHub Flavored Markdown (GFM) documents.
 
@@ -205,7 +211,99 @@ When an event triggers:
 
 ______________________________________________________________________
 
-## 6. Three-Phase Configuration Migration
+## 6. Distributed Compiler Caching (`sccache`) & Operator Self-Service Guide
+
+ActionRunner supports first-class distributed Rust compilation caching via [`sccache`](https://github.com/mozilla/sccache) across workflow authoring, capability-aware stage scheduling, pre-stage daemon health verification, and SVG scorecard telemetry.
+
+### 6.1 Policy Modes (`SccacheMode`) & Precedence
+
+Both the top-level workflow and individual tasks in `tasks:` accept an optional `sccache` policy (`"disabled"`, `"try"`, or `"mandatory"`). Each task resolves its effective policy via `task.sccache.unwrap_or(workflow.sccache)` (defaulting to `"disabled"`):
+
+| Policy                     | Controller Scheduling (`effective_stage_tags`)                                                                 | Worker Behavior (`sccache` Installed & Healthy)                                                                        | Worker Behavior (`sccache` Missing or Daemon Unhealthy)                     |
+| :------------------------- | :------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
+| **`disabled`** *(default)* | Normal stage `tags` only                                                                                       | Does **not** set `RUSTC_WRAPPER`                                                                                       | Normal uncached execution                                                   |
+| **`try`** *(recommended)*  | Normal stage `tags` only (schedules onto any matching worker)                                                  | Exports `RUSTC_WRAPPER=sccache`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Logs a `[WARN]` line and falls back cleanly to uncached `cargo` compilation |
+| **`mandatory`**            | Automatically appends `"sccache"` to required stage capability tags (only routes to `sccache`-capable workers) | Exports `RUSTC_WRAPPER=sccache`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Fails closed immediately (`exit 126`) before spawning compilation           |
+
+### 6.2 Eligible vs. Excluded Tools & Mixed-Policy Stages
+
+Even when `sccache: "try"` or `sccache: "mandatory"` is configured at the workflow root, `StageRunner` only injects `RUSTC_WRAPPER=sccache` for Rust compilation tools:
+
+- **Eligible (`RUSTC_WRAPPER=sccache` injected)**: `cargo-check`, `cargo-test`, `cargo-clippy`, `cargo-build`, `cargo-nextest`, `cargo-bench`, `cargo-doc`.
+- **Excluded (`RUSTC_WRAPPER` never injected)**: `cargo-fmt`, `cargo-audit`, `cargo-llvm-cov` (which requires uncached LLVM `-C instrument-coverage` instrumentation), `cargo-miri`, `mdformat`, and `git-checkout`.
+
+When a stage chains multiple tasks with mixed policies (for example, an uncached formatting step followed by a cached compilation step), the stage-level pre-flight check resolves the highest requirement across eligible steps (`mandatory` if any eligible step is `mandatory`, otherwise `try` if any eligible step is `try`, otherwise `disabled`), while `StageRunner::compute_sccache_env` evaluates wrapper injection strictly per step.
+
+### 6.3 Pre-Stage Daemon Health Check & S3 Hijack Auto-Recovery
+
+Before executing a stage whose resolved mode is `try` or `mandatory`, `StageRunner::ensure_sccache_server_healthy` runs a bounded (5-second timeout) `sccache --show-stats` probe with `/etc/action-runner/sccache.env` applied:
+
+1. **S3 vs. Local Disk Hijack Recovery**: Because `sccache` spawns a background local daemon on first invocation and ignores environment variables on subsequent client calls while that daemon remains alive, an interactive shell or unconfigured process could accidentally start the local daemon in `Local disk` mode even when `/etc/action-runner/sccache.env` configures `SCCACHE_BUCKET` (S3/Garage/MinIO). If `StageRunner` detects `"Cache location"` reporting `"Local disk"` while `SCCACHE_BUCKET` is non-empty, it automatically executes `sccache --stop-server` followed by `sccache --start-server` with `/etc/action-runner/sccache.env` injected.
+1. **Wedged Socket Recovery**: If `sccache --show-stats` fails or times out, `StageRunner` performs a single bounded `--stop-server` + `--start-server` recovery attempt and re-verifies `--show-stats`.
+1. **Anti-Race Idle Timeout (`SCCACHE_IDLE_TIMEOUT=0`)**: Unless overridden in `/etc/action-runner/sccache.env`, `StageRunner::compute_sccache_env` defaults `SCCACHE_IDLE_TIMEOUT=0` so the local `sccache` server never shuts down mid-build during long linking phases (`sccache` default is 600s).
+
+### 6.4 Step-by-Step Operator Self-Service Setup
+
+An operator deploying `ActionRunner` on their own cluster can enable `sccache` without code changes by following these steps on each worker node:
+
+#### Step 1: Install `sccache` on the Worker Node
+
+Install the `sccache` binary into a system-wide executable path accessible to the `action-runner` service account (`/usr/local/bin/sccache` or `/usr/bin/sccache`):
+
+```bash
+sudo install -m 755 sccache /usr/local/bin/sccache
+sudo -u action-runner /usr/local/bin/sccache --version
+```
+
+On startup, `action-runner` probes `PATH` (`which sccache`). When found, it automatically advertises `"sccache"` in `NodeCapabilities.supported_tools` (verifiable via `GET /api/cluster/nodes` on the controller).
+
+#### Step 2: Provision `/etc/action-runner/sccache.env`
+
+Create `/etc/action-runner/sccache.env` owned by `action-runner:action-runner` (`chmod 0600`) to configure either an S3-compatible object store (Garage, MinIO, AWS S3) or a bounded local disk cache:
+
+```bash
+sudo install -d -m 700 -o action-runner -g action-runner /etc/action-runner
+sudo tee /etc/action-runner/sccache.env >/dev/null <<'EOF'
+# Option A: Shared S3-compatible object storage (Garage / MinIO / AWS S3)
+SCCACHE_BUCKET=ci-sccache
+SCCACHE_ENDPOINT=http://192.0.2.10:3900
+SCCACHE_REGION=garage
+SCCACHE_S3_USE_SSL=false
+SCCACHE_S3_KEY_PREFIX=actionrunner-v1/
+AWS_ACCESS_KEY_ID=GKxxxxxxxxxxxxxxxxxxxxxxxx
+AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+SCCACHE_SERVER_PORT=4226
+SCCACHE_IDLE_TIMEOUT=0
+
+# Option B: Local disk cache (if not using S3, comment out Option A and uncomment below)
+# SCCACHE_DIR=/var/lib/action-runner/.cache/sccache
+# SCCACHE_CACHE_SIZE=20G
+# SCCACHE_IDLE_TIMEOUT=0
+EOF
+sudo chown action-runner:action-runner /etc/action-runner/sccache.env
+sudo chmod 600 /etc/action-runner/sccache.env
+```
+
+> **Security Invariant**: `WorkerConfig::load_sccache_env()` automatically filters `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` out of `/etc/action-runner/sccache.env` so wrapper injection remains strictly governed per task by `StageRunner::compute_sccache_env()`.
+
+#### Step 3: Verify `MuIsolation` Sandbox & Systemd Paths
+
+Ensure every repository's `.actionrunner/security.yml` and host ceiling (`/etc/mu-isolation/ceiling.yml`) include `/usr/local/bin` and `/usr/bin` in `read_paths` and `exec_paths`. Verify under the `action-runner` service account and restart the worker daemon:
+
+```bash
+sudo -u action-runner sh -a -c '. /etc/action-runner/sccache.env && sccache --stop-server >/dev/null 2>&1 || true && sccache --start-server && sccache --show-stats'
+sudo systemctl restart action-runner
+```
+
+#### Step 4: Operator Troubleshooting Checklist
+
+- **Hit rate stays `0%` across multi-node builds**: Run `sudo -u action-runner sccache --show-stats` on each worker and check `Cache location`. If it shows `Local disk` instead of `S3`, verify `SCCACHE_BUCKET` and `AWS_*` credentials in `/etc/action-runner/sccache.env`.
+- **Stage with `sccache: "mandatory"` remains `Queued`**: Query `GET /api/cluster/nodes` on the controller and verify at least one online worker matching the stage's architecture/custom `tags` also lists `"sccache"` in `supported_tools`.
+- **Stage fails with `exit 126` (`sccache mandatory policy failed`)**: Inspect the `[ERROR]` line in the stage log; `sccache --show-stats` failed (e.g. unreachable S3 endpoint or invalid credentials in `/etc/action-runner/sccache.env`).
+
+______________________________________________________________________
+
+## 7. Three-Phase Configuration Migration
 
 To safely transition production repositories from legacy `.actionrunner/on-*.yml` files without downtime, teams follow a strict 3-phase rollout:
 
@@ -243,13 +341,14 @@ To safely transition production repositories from legacy `.actionrunner/on-*.yml
 
 ______________________________________________________________________
 
-## 7. Annotated Example
+## 8. Annotated Example
 
 Below is a complete, production-grade `.actionrunner/ActionRunner.yml` pipeline:
 
 ```yaml
 version: "3"
 name: "k3-platform-ci"
+sccache: "try"
 
 env:
   RUST_BACKTRACE: "1"
@@ -269,6 +368,7 @@ tasks:
   clippy-lint:
     tool: "cargo-clippy"
     args: ["--workspace", "--all-targets", "--", "-D", "warnings"]
+    sccache: "mandatory"
     env:
       CARGO_TERM_COLOR: "always"
     timeout_seconds: 300
@@ -288,6 +388,7 @@ tasks:
   coverage-report:
     tool: "cargo-llvm-cov"
     args: ["--workspace", "--lcov", "--output-path", "target/lcov.info"]
+    sccache: "disabled"
     timeout_seconds: 900
     sandbox_profile: "standard"
 

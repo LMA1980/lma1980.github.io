@@ -35,8 +35,9 @@ ______________________________________________________________________
 ### 1. Declarative Pipeline Configuration
 
 - [**ActionRunner.yml Syntax Reference**](actionrunner-syntax.md) (`actionrunner-syntax.md` — Issue [#10](https://github.com/LMA1980/lma1980.github.io/issues/10))
-  - Complete Version 3 schema specification: `tasks`, `stages`, and `on_action`.
+  - Complete Version 3 schema specification: `tasks`, `stages`, `on_action`, and `sccache` (`disabled`, `try`, `mandatory`).
   - Compile-time `ActionRunner-tools` `ToolAdapter` registry and strict shell metacharacter prohibition (`ProhibitedShellInvocation`).
+  - Distributed compilation caching via `sccache`: capability-aware stage scheduling (`effective_stage_tags`), pre-stage daemon health checks & S3 vs. `Local disk` hijack auto-recovery, and step-by-step operator self-service setup (`/etc/action-runner/sccache.env`).
   - Topological stage DAG resolution, cycle detection (`CycleDetected`), `exclusive: true` worker draining, and `max_concurrent_per_node: 1` single-slot execution.
   - Three-phase configuration migration strategy from legacy `.actionrunner/on-*.yml`.
 
