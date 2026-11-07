@@ -55,15 +55,15 @@ on_action:
 
 ### Top-Level Fields
 
-| Field       | Type   | Required | Description                                                                                             |
-| :---------- | :----- | :------- | :------------------------------------------------------------------------------------------------------ |
-| `version`   | string | **Yes**  | Schema version. Must be exactly `"3"`.                                                                  |
-| `name`      | string | **Yes**  | Human-readable name for the pipeline.                                                                   |
-| `sccache`   | string | No       | Default compilation cache policy across all eligible Rust tasks (`"disabled"`, `"try"`, `"mandatory"`). |
-| `env`       | map    | No       | Global environment variable key-value pairs exported to all tasks.                                      |
-| `tasks`     | map    | **Yes**  | Map of unique task IDs to `TaskSpec` definitions.                                                       |
-| `stages`    | list   | **Yes**  | List of `StageSpec` definitions forming the execution DAG.                                              |
-| `on_action` | map    | **Yes**  | Map of webhook action triggers to lists of target stage IDs.                                            |
+| Field       | Type   | Required | Description                                                                                               |
+| :---------- | :----- | :------- | :-------------------------------------------------------------------------------------------------------- |
+| `version`   | string | **Yes**  | Schema version. Must be exactly `"3"`.                                                                    |
+| `name`      | string | **Yes**  | Human-readable name for the pipeline.                                                                     |
+| `sccache`   | string | No       | Default compilation cache policy across all eligible tasks (`"try"` [default], `"mandatory"`, `"false"`). |
+| `env`       | map    | No       | Global environment variable key-value pairs exported to all tasks.                                        |
+| `tasks`     | map    | **Yes**  | Map of unique task IDs to `TaskSpec` definitions.                                                         |
+| `stages`    | list   | **Yes**  | List of `StageSpec` definitions forming the execution DAG.                                                |
+| `on_action` | map    | **Yes**  | Map of webhook action triggers to lists of target stage IDs.                                              |
 
 ______________________________________________________________________
 
@@ -86,15 +86,15 @@ tasks:
     sandbox_profile: "strict"
 ```
 
-| Field             | Type    | Required | Description                                                                              |
-| :---------------- | :------ | :------- | :--------------------------------------------------------------------------------------- |
-| `tool`            | string  | **Yes**  | Tool identifier registered in the compile-time `ToolAdapter` registry.                   |
-| `args`            | list    | No       | Explicit list of string arguments passed directly to the binary. Defaults to `[]`.       |
-| `working_dir`     | string  | No       | Relative directory within the repository workspace. Defaults to repository root.         |
-| `sccache`         | string  | No       | Task-level override for compilation cache policy (`"disabled"`, `"try"`, `"mandatory"`). |
-| `env`             | map     | No       | Task-specific environment variable overrides.                                            |
-| `timeout_seconds` | integer | No       | Maximum execution duration before SIGTERM/SIGKILL. Defaults to `600`.                    |
-| `sandbox_profile` | string  | No       | Name of the desired sandbox profile matching `.actionrunner/security.yml`.               |
+| Field             | Type    | Required | Description                                                                           |
+| :---------------- | :------ | :------- | :------------------------------------------------------------------------------------ |
+| `tool`            | string  | **Yes**  | Tool identifier registered in the compile-time `ToolAdapter` registry.                |
+| `args`            | list    | No       | Explicit list of string arguments passed directly to the binary. Defaults to `[]`.    |
+| `working_dir`     | string  | No       | Relative directory within the repository workspace. Defaults to repository root.      |
+| `sccache`         | string  | No       | Task-level override for compilation cache policy (`"try"`, `"mandatory"`, `"false"`). |
+| `env`             | map     | No       | Task-specific environment variable overrides.                                         |
+| `timeout_seconds` | integer | No       | Maximum execution duration before SIGTERM/SIGKILL. Defaults to `600`.                 |
+| `sandbox_profile` | string  | No       | Name of the desired sandbox profile matching `.actionrunner/security.yml`.            |
 
 ### Compile-Time `ToolAdapter` Registry
 
@@ -147,17 +147,18 @@ stages:
     max_concurrent_per_node: 1
 ```
 
-| Field                     | Type    | Required | Description                                                                    |
-| :------------------------ | :------ | :------- | :----------------------------------------------------------------------------- |
-| `id`                      | string  | **Yes**  | Unique identifier for the stage across the pipeline.                           |
-| `name`                    | string  | **Yes**  | Human-readable stage description for logs and status cards.                    |
-| `tasks`                   | list    | **Yes**  | Ordered list of task IDs from Tier 1 executed sequentially in this stage.      |
-| `depends_on`              | list    | No       | List of prerequisite stage IDs that must succeed before this stage starts.     |
-| `tags`                    | list    | No       | Capability tags required on worker nodes (e.g. `riscv64`, `x86_64`, `vector`). |
-| `threads`                 | integer | No       | Thread budget allocated to this stage. Defaults to `2`.                        |
-| `toolchain`               | string  | No       | Rust toolchain selector (`stable`, `nightly`, `beta`). Defaults to `stable`.   |
-| `exclusive`               | boolean | No       | When `true`, demands full-node serialization/drain. Defaults to `false`.       |
-| `max_concurrent_per_node` | integer | No       | Concurrency limit per worker node. Enforced at `1`.                            |
+| Field                     | Type    | Required | Description                                                                            |
+| :------------------------ | :------ | :------- | :------------------------------------------------------------------------------------- |
+| `id`                      | string  | **Yes**  | Unique identifier for the stage across the pipeline.                                   |
+| `name`                    | string  | **Yes**  | Human-readable stage description for logs and status cards.                            |
+| `tasks`                   | list    | **Yes**  | Ordered list of task IDs from Tier 1 executed sequentially in this stage.              |
+| `depends_on`              | list    | No       | List of prerequisite stage IDs that must succeed before this stage starts.             |
+| `tags`                    | list    | No       | Capability tags required on worker nodes (e.g. `riscv64`, `x86_64`, `vector`).         |
+| `threads`                 | integer | No       | Thread budget allocated to this stage. Defaults to `2`.                                |
+| `toolchain`               | string  | No       | Rust toolchain selector (`stable`, `nightly`, `beta`). Defaults to `stable`.           |
+| `exclusive`               | boolean | No       | When `true`, demands full-node serialization/drain. Defaults to `false`.               |
+| `sccache`                 | string  | No       | Stage-level override for compilation cache policy (`"try"`, `"mandatory"`, `"false"`). |
+| `max_concurrent_per_node` | integer | No       | Concurrency limit per worker node. Enforced at `1`.                                    |
 
 ### DAG Validation & Cycle Detection
 
@@ -215,24 +216,26 @@ ______________________________________________________________________
 
 ActionRunner supports first-class distributed Rust compilation caching via [`sccache`](https://github.com/mozilla/sccache) across workflow authoring, capability-aware stage scheduling, pre-stage daemon health verification, and SVG scorecard telemetry.
 
+> **Complete Operator Walkthrough**: For a step-by-step operator installation guide (`x86_64` and `riscv64`), Local Disk vs. S3/Garage backend configuration, and a detailed explanation of how `sccache` influences cold vs. warm build timings, `CARGO_INCREMENTAL=0`, and stage scheduling, see the dedicated [**Operator & Workflow Guide: Distributed `sccache` Compilation Caching**](sccache-guide.md).
+
 ### 6.1 Policy Modes (`SccacheMode`) & Precedence
 
-Both the top-level workflow and individual tasks in `tasks:` accept an optional `sccache` policy (`"disabled"`, `"try"`, or `"mandatory"`). Each task resolves its effective policy via `task.sccache.unwrap_or(workflow.sccache)` (defaulting to `"disabled"`):
+The top-level workflow, individual stages in `stages:`, and individual tasks in `tasks:` each accept an optional `sccache` policy (`"try"`, `"mandatory"`, or `"false"`). Each task resolves its effective policy via `tasks.<id>.sccache -> stages[i].sccache -> workflow.sccache -> "try"` (defaulting to `"try"`):
 
-| Policy                     | Controller Scheduling (`effective_stage_tags`)                                                                 | Worker Behavior (`sccache` Installed & Healthy)                                                                        | Worker Behavior (`sccache` Missing or Daemon Unhealthy)                     |
-| :------------------------- | :------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| **`disabled`** *(default)* | Normal stage `tags` only                                                                                       | Does **not** set `RUSTC_WRAPPER`                                                                                       | Normal uncached execution                                                   |
-| **`try`** *(recommended)*  | Normal stage `tags` only (schedules onto any matching worker)                                                  | Exports `RUSTC_WRAPPER=sccache`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Logs a `[WARN]` line and falls back cleanly to uncached `cargo` compilation |
-| **`mandatory`**            | Automatically appends `"sccache"` to required stage capability tags (only routes to `sccache`-capable workers) | Exports `RUSTC_WRAPPER=sccache`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Fails closed immediately (`exit 126`) before spawning compilation           |
+| Policy                | Accepted YAML Literals                | Controller Scheduling (`effective_stage_tags`)                                                                 | Worker Behavior (`sccache` Installed & Healthy)                                                                              | Worker Behavior (`sccache` Missing or Daemon Unhealthy)                     |
+| :-------------------- | :------------------------------------ | :------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
+| **`try`** *(default)* | `try`, `true`, `auto`, `yes`, `1`     | Normal stage `tags` only (schedules onto any matching worker)                                                  | Exports `RUSTC_WRAPPER=<sccache_bin>`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Logs a `[WARN]` line and falls back cleanly to uncached `cargo` compilation |
+| **`mandatory`**       | `mandatory`, `required`, `strict`     | Automatically appends `"sccache"` to required stage capability tags (only routes to `sccache`-capable workers) | Exports `RUSTC_WRAPPER=<sccache_bin>`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Fails closed immediately (`exit 126`) before spawning compilation           |
+| **`false`**           | `false`, `off`, `disabled`, `no`, `0` | Normal stage `tags` only                                                                                       | Strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER`                                                                       | Normal uncached execution                                                   |
 
 ### 6.2 Eligible vs. Excluded Tools & Mixed-Policy Stages
 
-Even when `sccache: "try"` or `sccache: "mandatory"` is configured at the workflow root, `StageRunner` only injects `RUSTC_WRAPPER=sccache` for Rust compilation tools:
+Even when `sccache: "try"` or `sccache: "mandatory"` is configured at the workflow root, `StageRunner` only injects `RUSTC_WRAPPER=<sccache_bin>` for eligible Rust/WASM compilation tools:
 
-- **Eligible (`RUSTC_WRAPPER=sccache` injected)**: `cargo-check`, `cargo-test`, `cargo-clippy`, `cargo-build`, `cargo-nextest`, `cargo-bench`, `cargo-doc`.
-- **Excluded (`RUSTC_WRAPPER` never injected)**: `cargo-fmt`, `cargo-audit`, `cargo-llvm-cov` (which requires uncached LLVM `-C instrument-coverage` instrumentation), `cargo-miri`, `mdformat`, and `git-checkout`.
+- **Eligible (`RUSTC_WRAPPER=<sccache_bin>` injected)**: `cargo-build`, `cargo-check`, `cargo-test`, `cargo-clippy`, `cargo-bench`, `trunk`.
+- **Excluded (`RUSTC_WRAPPER` stripped)**: `cargo-fmt`, `cargo-audit`, `cargo-llvm-cov` (which requires uncached LLVM `-C instrument-coverage` instrumentation), `cargo-miri` (which uses Miri's own `RUSTC_WRAPPER`), `mdformat`, and `git-checkout`.
 
-When a stage chains multiple tasks with mixed policies (for example, an uncached formatting step followed by a cached compilation step), the stage-level pre-flight check resolves the highest requirement across eligible steps (`mandatory` if any eligible step is `mandatory`, otherwise `try` if any eligible step is `try`, otherwise `disabled`), while `StageRunner::compute_sccache_env` evaluates wrapper injection strictly per step.
+When a stage chains multiple tasks with mixed policies (for example, an uncached formatting step followed by a cached compilation step), the stage-level scheduling check only requires `"sccache"` when an eligible task resolves to `mandatory`, and `StageRunner::compute_sccache_env` evaluates wrapper injection strictly per step.
 
 ### 6.3 Pre-Stage Daemon Health Check & S3 Hijack Auto-Recovery
 
