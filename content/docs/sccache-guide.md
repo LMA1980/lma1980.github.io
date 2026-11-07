@@ -46,16 +46,33 @@ Rust's built-in incremental compilation (`-C incremental=...`) relies on fine-gr
 - **If you configure `/etc/action-runner/sccache.env` with S3 / Garage / MinIO (Shared Cluster Cache)**:
   Compiled `.rlib` artifacts are uploaded and downloaded over HTTP(S) to your S3 endpoint (`SCCACHE_BUCKET`). During heavy parallel builds (`CARGO_BUILD_JOBS=6` or `8`), expect bursty LAN traffic between workers and your S3 server. Always deploy your S3/Garage cache server on the same low-latency local network as your worker nodes.
 
-### 1.5 What Shares Cache Hits Across Worker Nodes (and What Does Not)
+### 1.5 Cross-Compilation Challenges & Multi-Architecture Cache Sharing (`x86_64` ↔ `riscv64` / `aarch64`)
 
-`sccache` computes its cache key from the **exact compiler binary digest**, **command-line flags**, **target triple**, and **preprocessed source inputs**:
+Running `sccache` across a heterogeneous cluster (where `x86_64` servers cross-compile for `riscv64gc-unknown-linux-gnu` alongside native `riscv64` SpacemiT K3 and `aarch64` SBC workers) introduces four critical challenges that operators must understand:
 
-1. **Mixed CPU Architectures (`x86_64` vs. `riscv64`)**:
-   `x86_64` workers and `riscv64` workers can safely point to the **exact same `SCCACHE_BUCKET` and `SCCACHE_S3_KEY_PREFIX`** without collisions because the target triple is part of the hash. However, a native build on an `x86_64` worker only warms the cache for other `x86_64` builds, and a native build on a `riscv64` worker only warms the cache for other `riscv64` builds.
-1. **Rust Toolchain Alignment Across Workers**:
-   If `node-a` has `rustc 1.83.0` and `node-b` has `rustc 1.82.0`, their compiler binary digests differ and they will **never** share cache hits. Keep `/var/lib/action-runner/.rustup` synchronized across all workers of the same architecture (`sudo -u action-runner rustup update`).
-1. **Workspace Path Consistency (`ACTION_RUNNER_WORKSPACE`)**:
-   Keep `ACTION_RUNNER_WORKSPACE` (`/var/lib/action-runner/workspace`) identical across workers so path-dependent macros and debug symbols produce identical hashes across nodes.
+1. **Challenge 1 — Why `x86_64` Cross-Compilers Share Cache Hits With Each Other, But *Not* With Native `riscv64` Workers**:
+   `sccache` computes its cache key by hashing the **SHA-256 digest of the `rustc` compiler binary itself**, in addition to the target triple (`--target riscv64gc-unknown-linux-gnu`), command-line flags, and preprocessed source inputs:
+
+   - Because an `x86_64` ELF `rustc` binary has a different file digest than a `riscv64` ELF `rustc` binary, **an `x86_64` worker cross-compiling for `riscv64gc-unknown-linux-gnu` will never share cache hits with a native `riscv64` worker**, even when targeting the exact same Rust version and S3 bucket.
+   - However, **multiple `x86_64` cross-compilation workers *do* share 100% of their cross-compiled `riscv64` cache hits with each other**, provided their `rustc` version and cross-toolchain paths are identical.
+   - All architectures (`x86_64`, `riscv64`, `aarch64`) can safely use the **same `SCCACHE_BUCKET` and `SCCACHE_S3_KEY_PREFIX`** without ever colliding or corrupting artifacts.
+
+1. **Challenge 2 — Host `build.rs` & Proc-Macro Crashes When Global `RUSTFLAGS` Are Used During Cross-Compilation**:
+   During a cross-build (`--target riscv64gc-unknown-linux-gnu` on an `x86_64` host), Cargo compiles `build.rs` scripts and procedural macros for the **host (`x86_64`)**, and library/binary crates for the **target (`riscv64`)**.
+
+   - **The Trap**: If you export global `RUSTFLAGS="-C target-feature=+v -C target-cpu=spacemit-x100"`, Cargo passes those RISC-V flags to `sccache` / `rustc` when compiling **host `x86_64` `build.rs` and proc-macro crates**, failing immediately because `spacemit-x100` is not a valid `x86_64` CPU.
+   - **How ActionRunner Solves This**: `StageRunner::compute_toolchain_env` **never** sets global `RUSTFLAGS` during cross-compilation (`is_cross == true`). Instead, it exports target-scoped variables (`CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_RUSTFLAGS`, `CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER`, `CC_riscv64gc_unknown_linux_gnu`, `CFLAGS_riscv64gc_unknown_linux_gnu`), allowing `sccache` to cleanly cache both the `x86_64` host proc-macros and the `riscv64` target crates in the same build.
+
+1. **Challenge 3 — Multi-Node Cross-Toolchain Path, Sysroot & Linker Alignment (`llvm-24` / `gcc-17-spacemit-x100`)**:
+   For two `x86_64` cross-compile workers to share `sccache` hits when targeting `riscv64gc-unknown-linux-gnu`, their cross-compiler symlinks and Debian multiarch sysroots must match identically:
+
+   - **Canonical Symlink Paths**: Install or symlink custom toolchains at identical paths across all cross-compile nodes (`/opt/cross-llvm-24` symlinked at `/opt/llvm-24-spacemit-x100`, and `/opt/cross-gcc-17` symlinked at `/opt/gcc-17-spacemit-x100`). Note that `WorkerConfig` checks for the actual executable binaries (`/opt/llvm-24-spacemit-x100/bin/clang` and `/opt/gcc-17-spacemit-x100/bin/riscv64-unknown-linux-gnu-gcc`), not just directory existence, so empty directory stubs will not falsely advertise a toolchain.
+   - **Multiarch Sysroot & `lld` Linker Flags**: On Debian/Ubuntu multiarch hosts where RISC-V `libc` headers and `crt1.o` live under `/usr/riscv64-linux-gnu` and `/usr/lib/riscv64-linux-gnu`, `StageRunner` automatically injects `-C link-arg=--target=riscv64-linux-gnu -C link-arg=--sysroot=/ -C link-arg=-fuse-ld=lld` (for `llvm-24`) or `CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-unknown-linux-gnu-gcc` (for `gcc-17`) so cross-linking succeeds deterministically.
+
+1. **Challenge 4 — Building `sccache` Itself for Low-RAM (`4 GiB`) `aarch64` or `riscv64` Edge Workers**:
+   Compiling `sccache` from source (`cargo install sccache --locked`) directly on a memory-constrained edge SBC (such as a `4 GiB` RAM `aarch64` Raspberry Pi 4 or a read-only SD/overlayroot node) can trigger OOM kills or exhaust tmpfs/flash storage.
+
+   - **Recommended Operator Pattern**: Cross-compile `sccache` on an `x86_64` build host for `aarch64-unknown-linux-gnu` or `riscv64gc-unknown-linux-gnu` (shown in Step 1 below), strip the binary, and install it directly into `/usr/local/bin/sccache` on the edge worker.
 
 ### 1.6 Why Coverage (`cargo-llvm-cov`) and Miri (`cargo-miri`) Intentionally Bypass `sccache`
 
@@ -134,9 +151,33 @@ sudo install -m 755 "/tmp/sccache-${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl/
 rm -rf /tmp/sccache.tar.gz "/tmp/sccache-${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl"
 ```
 
-#### Option B: `riscv64` (SpacemiT K3) or Custom Linux Worker (Build from Source)
+#### Option B: Cross-Compile `sccache` on an `x86_64` Host for `riscv64` or Low-RAM `aarch64` Workers *(Recommended for SBCs)*
 
-On `riscv64gc-unknown-linux-gnu` nodes, build `sccache` natively using the worker's Rust toolchain and install the resulting binary into `/usr/local/bin/sccache`:
+To avoid OOM-killing `4 GiB` RAM edge SBCs or waiting for slow on-board compilation, cross-compile `sccache` on an `x86_64` Linux machine and copy the stripped binary to `/usr/local/bin/sccache` on your target worker:
+
+```bash
+# On your x86_64 build host:
+sudo apt-get update && sudo apt-get install -y \
+  gcc-riscv64-linux-gnu g++-riscv64-linux-gnu \
+  gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+  pkg-config libssl-dev
+
+# Add target (riscv64gc-unknown-linux-gnu or aarch64-unknown-linux-gnu)
+TARGET="riscv64gc-unknown-linux-gnu"
+LINKER="riscv64-linux-gnu-gcc"
+rustup target add "${TARGET}"
+
+CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER="${LINKER}" \
+  CC_riscv64gc_unknown_linux_gnu="${LINKER}" \
+  cargo install sccache --locked --target "${TARGET}" --root /tmp/sccache-out
+
+riscv64-linux-gnu-strip /tmp/sccache-out/bin/sccache
+# Copy /tmp/sccache-out/bin/sccache to the worker and install at /usr/local/bin/sccache (0755)
+```
+
+#### Option C: Native Build from Source on `riscv64` (SpacemiT K3 with 32 GB RAM)
+
+On high-memory `riscv64gc-unknown-linux-gnu` nodes (such as a 32 GB RAM SpacemiT K3 board), you can also compile `sccache` natively using the worker's Rust toolchain:
 
 ```bash
 # 1. Install build prerequisites (Debian/Ubuntu/Bianbu)
