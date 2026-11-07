@@ -16,6 +16,7 @@ FILES=(
     $(find content -name "*.md" | sort)
     model-runner/benchmarks.md
     model-runner/docs/crates/index.md
+    $(find model-runner/docs/crates -name "action-runner*.md" | sort)
     $(find model-runner/docs/crates -name "muobserve*.md" | sort)
 )
 
