@@ -212,7 +212,7 @@ When an event triggers:
 
 ______________________________________________________________________
 
-## 6. Distributed Compiler Caching (`sccache`) & Operator Self-Service Guide
+## 6. Distributed Compiler Caching (`sccache`) & Operator Guide
 
 ActionRunner supports first-class distributed Rust compilation caching via [`sccache`](https://github.com/mozilla/sccache) across workflow authoring, capability-aware stage scheduling, pre-stage daemon health verification, and SVG scorecard telemetry.
 
@@ -245,9 +245,9 @@ Before executing a stage whose resolved mode is `try` or `mandatory`, `StageRunn
 1. **Wedged Socket Recovery**: If `sccache --show-stats` fails or times out, `StageRunner` performs a single bounded `--stop-server` + `--start-server` recovery attempt and re-verifies `--show-stats`.
 1. **Anti-Race Idle Timeout (`SCCACHE_IDLE_TIMEOUT=0`)**: Unless overridden in `/etc/action-runner/sccache.env`, `StageRunner::compute_sccache_env` defaults `SCCACHE_IDLE_TIMEOUT=0` so the local `sccache` server never shuts down mid-build during long linking phases (`sccache` default is 600s).
 
-### 6.4 Step-by-Step Operator Self-Service Setup
+### 6.4 Step-by-Step Operator Setup
 
-An operator deploying `ActionRunner` on their own cluster can enable `sccache` without code changes by following these steps on each worker node:
+Enable `sccache` on each worker node by completing the following steps:
 
 #### Step 1: Install `sccache` on the Worker Node
 

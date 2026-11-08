@@ -4,7 +4,7 @@ This guide walks cluster operators and workflow authors step-by-step through ins
 
 ______________________________________________________________________
 
-## 1. How `sccache` Influences Your Experience (What to Expect)
+## 1. How `sccache` Influences Build Timings & Scheduling
 
 Before installing `sccache` on your cluster, it is critical to understand how compiler caching alters build timings, disk/network usage, scheduling, and failure modes across ActionRunner.
 
@@ -128,7 +128,7 @@ Understanding `sccache`'s client-daemon architecture explains how ActionRunner p
 - **Why the "Local Disk Hijack" Happens (and How ActionRunner Automatically Heals It)**:
   `sccache` uses a background daemon listening on `127.0.0.1:4226`. Whichever process invokes `sccache` *first* spawns that background daemon, and **all environment variables on later `sccache` client commands are ignored as long as that daemon stays running**.
   If an operator SSHes into a worker when the daemon is stopped and runs `sudo -u action-runner sccache --show-stats` *without* sourcing `/etc/action-runner/sccache.env` first, `sccache` silently spawns a background daemon in **`Local disk` mode**—causing subsequent builds to ignore your S3 bucket!
-  To protect operators from this trap, `StageRunner::ensure_sccache_server_healthy` inspects the `Cache location` line of `sccache --show-stats` before every stage. If `SCCACHE_BUCKET` is configured in `/etc/action-runner/sccache.env` but the daemon reports `Cache location: Local disk`, ActionRunner automatically runs `sccache --stop-server` and restarts the daemon with your S3 credentials.
+  To prevent this mode mismatch, `StageRunner::ensure_sccache_server_healthy` inspects the `Cache location` line of `sccache --show-stats` before every stage. If `SCCACHE_BUCKET` is configured in `/etc/action-runner/sccache.env` but the daemon reports `Cache location: Local disk`, ActionRunner automatically runs `sccache --stop-server` and restarts the daemon with your S3 credentials.
 
 ______________________________________________________________________
 
@@ -356,7 +356,7 @@ Expected output:
 
 ### Check 2: Trigger Build #1 (Cold Cache) and Inspect Live Stats
 
-Trigger a CI run on any Rust repository (remember `sccache: try` is active by default even if not explicitly written in `.actionrunner/ActionRunner.yml`). Once a compilation stage (`clippy` or `test`) finishes, run the stats check on the worker node:
+Trigger a CI run on any Rust repository (`sccache: try` is active by default even when omitted from `.actionrunner/ActionRunner.yml`). Once a compilation stage (`clippy` or `test`) finishes, run the stats check on the worker node:
 
 ```bash
 sudo -u action-runner bash -c 'set -a && source /etc/action-runner/sccache.env && set +a && /usr/local/bin/sccache --show-stats'
