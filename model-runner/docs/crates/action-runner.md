@@ -71,9 +71,9 @@ Hardware micro-benchmarks (e.g. measuring RVV 1.0 throughput or A100 matrix jitt
 
 ______________________________________________________________________
 
-## 4. Operator Self-Service `sccache` Integration Guide
+## 4. Operator `sccache` Integration Guide
 
-Operators can enable `sccache` on any `action-runner` worker node without modifying daemon source code:
+Enable `sccache` on any `action-runner` worker node by configuring the binary and environment file:
 
 1. **Install `sccache` Binary**: Place `sccache` in `/usr/local/bin/sccache` (`0755`). On startup, `action-runner` checks `which sccache` and automatically advertises `"sccache"` in `NodeCapabilities.supported_tools`.
 1. **Create `/etc/action-runner/sccache.env` (`0600`, `action-runner:action-runner`)**:
@@ -97,7 +97,7 @@ Operators can enable `sccache` on any `action-runner` worker node without modify
 
 ______________________________________________________________________
 
-## 4. Hardware & Platform Invariants
+## 5. Hardware & Platform Invariants
 
 1. **Bare-Metal Sandboxing**: Runs under isolated system user `action-runner` with `ProtectHome=read-only`.
 1. **Git-Only Synchronization**: Always synchronizes code via Git; avoids non-atomic file sync (`rsync`).
@@ -105,7 +105,7 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## 5. Inter-Crate Dependencies
+## 6. Inter-Crate Dependencies
 
 - **Imports**: `action-runner-ipc`, `tokio`, `tokio-tungstenite`, `arrow`, `thiserror`, `serde`
 - **Consumers**: `action-runner-controller`
