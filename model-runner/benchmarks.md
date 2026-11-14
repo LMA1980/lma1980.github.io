@@ -2,7 +2,7 @@
 
 Live empirical comparative benchmark evaluating **five AI inference runtimes** across **all planned Milestone 4 models** (including both implemented recipes and planned architectures not yet implemented) on a dedicated **SpacemiT Key Stone K3 (`riscv64`, `worker-riscv64`)** reference board.
 
-> **Live Campaign Status (`2026-11-14 10:48 UTC`)**: **`56 / 57`** planned models evaluated and published live (**`Mixtral-8x7B-Instruct-v0.1 (`Q4_0`)`** in progress: **`5 / 5`** runtime stages streamed). Remaining queued waves stream to this page immediately upon stage completion.
+> **Live Campaign Status (`2026-11-14 10:48 UTC`)**: **`57 / 57`** planned models evaluated and published live. Remaining queued waves stream to this page immediately upon stage completion.
 
 ## 1. Five Evaluated Runtimes & Dedicated Hardware Isolation
 
@@ -10,11 +10,11 @@ During benchmarking, the **SpacemiT K3 Reference Board (`worker-riscv64`)** is s
 
 |   #   | Solution / Baseline                            | Build Provenance & Kernel Backend                                       | 16-Core Scheduling & Memory Policy                                                                                                                     | Models Supported So Far |
 | :---: | :--------------------------------------------- | :---------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------: |
-| **1** | **Baseline 1: `ollama` (SpacemiT patches)**    | `spacemit-ollama-toolkit 0.0.13 (+spacemit, CPU_RISCV64_SPACEMIT IME2)` | `8t` HMP cluster-hopping across all 16 cores (`X100` `0–7` control + `A100` `8–15` `IME2` via `/proc/set_ai_thread`; avoids 2:1 spin-barrier livelock) |      **`39 / 56`**      |
-| **2** | **Baseline 2: `ollama` (`latest git`)**        | `0.0.0-git-8a89b76c (upstream main 8a89b76c, RVV 1.0)`                  | `8t` native HMP RVV 1.0 scheduling (`0x00FF` non-oversubscribed; unmodified upstream without `/proc/set_ai_thread`)                                    |      **`48 / 56`**      |
-| **3** | **Baseline 3: `llama.cpp` (SpacemiT patches)** | `0.6.0-dev build 11552 (23b0202a1, CPU_RISCV64_SPACEMIT IME2)`          | `-t 8` (`num_perfer_cores=8` HMP across all 16 cores: `X100` `0–7` + `A100` `8–15` `use_ime2=1`)                                                       |      **`41 / 56`**      |
-| **4** | **Baseline 4: `llama.cpp` (`latest git`)**     | `upstream master aa75ff323 (static RVV 1.0)`                            | `-t 8` static RVV 1.0 (`-DGGML_RVV=ON -DBUILD_SHARED_LIBS=OFF`, non-oversubscribed HMP domain)                                                         |      **`45 / 56`**      |
-| **5** | **Solution 5: `jero-engine` (`jero-diag`)**    | `jero-engine 0.1.0 (b6f8642, RVV 1.0 + A100 XSMTVDotII IME)`            | `mlock` + `flock` bounded `28 GiB` admission, `A100` `0xFF00` (`8t`) & simultaneous `0xFFFF` (`16t` `X100+A100` asymmetric row-split `IME`)            |      **`8 / 56`**       |
+| **1** | **Baseline 1: `ollama` (SpacemiT patches)**    | `spacemit-ollama-toolkit 0.0.13 (+spacemit, CPU_RISCV64_SPACEMIT IME2)` | `8t` HMP cluster-hopping across all 16 cores (`X100` `0–7` control + `A100` `8–15` `IME2` via `/proc/set_ai_thread`; avoids 2:1 spin-barrier livelock) |      **`40 / 57`**      |
+| **2** | **Baseline 2: `ollama` (`latest git`)**        | `0.0.0-git-8a89b76c (upstream main 8a89b76c, RVV 1.0)`                  | `8t` native HMP RVV 1.0 scheduling (`0x00FF` non-oversubscribed; unmodified upstream without `/proc/set_ai_thread`)                                    |      **`49 / 57`**      |
+| **3** | **Baseline 3: `llama.cpp` (SpacemiT patches)** | `0.6.0-dev build 11552 (23b0202a1, CPU_RISCV64_SPACEMIT IME2)`          | `-t 8` (`num_perfer_cores=8` HMP across all 16 cores: `X100` `0–7` + `A100` `8–15` `use_ime2=1`)                                                       |      **`41 / 57`**      |
+| **4** | **Baseline 4: `llama.cpp` (`latest git`)**     | `upstream master aa75ff323 (static RVV 1.0)`                            | `-t 8` static RVV 1.0 (`-DGGML_RVV=ON -DBUILD_SHARED_LIBS=OFF`, non-oversubscribed HMP domain)                                                         |      **`46 / 57`**      |
+| **5** | **Solution 5: `jero-engine` (`jero-diag`)**    | `jero-engine 0.1.0 (b6f8642, RVV 1.0 + A100 XSMTVDotII IME)`            | `mlock` + `flock` bounded `28 GiB` admission, `A100` `0xFF00` (`8t`) & simultaneous `0xFFFF` (`16t` `X100+A100` asymmetric row-split `IME`)            |      **`8 / 57`**       |
 
 ______________________________________________________________________
 
