@@ -3,7 +3,7 @@
 **Crate**: `muobserve-collector`\
 **Version**: `0.1.0` (Edition 2021)\
 **Role**: Sandboxed node-level edge telemetry collector daemon with OTLP/Arrow ingestion, streaming secret redaction, bounded DuckDB ring-buffer WAL, and step-ca mTLS upstream forwarding\
-**Repository**: [`LMA1980/MuObserve-collector`](https://github.com/LMA1980/MuObserve-collector)\
+**Repository**: [`LMA1980/mu-observable-collector`](https://github.com/LMA1980/mu-observable-collector)\
 **License**: `AGPL-3.0-only`
 
 ______________________________________________________________________

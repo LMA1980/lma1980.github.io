@@ -3,7 +3,7 @@
 **Crate**: `k3-core`  
 **Version**: `0.1.0` (Edition 2024, Rust 1.85)  
 **Role**: Foundational types, zero-copy tensor views, core affinity resolution, execution context, and unified error taxonomy  
-**Repository**: [`LMA1980/k3-core`](https://github.com/LMA1980/k3-core)  
+**Repository**: [`LMA1980/jero-core`](https://github.com/LMA1980/jero-core)  
 **Rustdoc Reference**: [`k3_core` API Reference](../../api/k3_core/index.html)
 
 ---

@@ -3,7 +3,7 @@
 **Crate**: `action-runner-controller`\
 **Version**: `0.1.0` (Edition 2021)\
 **Role**: GitHub Webhook ingress controller, DAG stage scheduler, DuckDB metrics aggregator, and dynamic SVG quality scorecard generator\
-**Repository**: [`LMA1980/ActionRunner-controller`](https://github.com/LMA1980/ActionRunner-controller)\
+**Repository**: [`LMA1980/mu-ci-controller`](https://github.com/LMA1980/mu-ci-controller)\
 **Rustdoc Reference**: [`action_runner_controller` API Reference](../../api/action_runner_controller/index.html)
 
 ______________________________________________________________________

@@ -3,7 +3,7 @@
 **Crate**: `muobserve`\
 **Version**: `0.1.0` (Edition 2021)\
 **Role**: Distributed OTEL + DuckDB/Parquet observability backend, centralized CI state store, hardware-aware benchmark and test regression analytics engine, and Antigravity Model Context Protocol (MCP) server\
-**Repository**: [`LMA1980/MuObserve`](https://github.com/LMA1980/MuObserve)\
+**Repository**: [`LMA1980/mu-observable-hub`](https://github.com/LMA1980/mu-observable-hub)\
 **Binaries**: `muobserve`, `muobserve-mcp`, `muobserve-cli`\
 **License**: `AGPL-3.0-only`
 
@@ -263,7 +263,7 @@ muobserve-cli migrate-actionrunner \
 
 # Run automated regression gate evaluation from CLI
 muobserve-cli benchmark-gate \
-  --repo LMA1980/k3-core \
+  --repo LMA1980/jero-core \
   --candidate-commit a1b2c3d4 \
   --baseline-branch main
 

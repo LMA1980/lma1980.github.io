@@ -3,7 +3,7 @@
 **Crate**: `muobserve-ipc`\
 **Version**: `0.1.0` (Edition 2021)\
 **Role**: Shared zero-copy wire framing, Apache Arrow telemetry batch schemas, W3C trace context propagation, streaming secret redactor contracts, and Apache Fory RPC envelopes\
-**Repository**: [`LMA1980/MuObserve-ipc`](https://github.com/LMA1980/MuObserve-ipc)\
+**Repository**: [`LMA1980/mu-observable-ipc`](https://github.com/LMA1980/mu-observable-ipc)\
 **License**: `LGPL-3.0-only WITH LGPL-3.0-linking-exception`
 
 ______________________________________________________________________
@@ -179,7 +179,7 @@ Tracks individual unit, integration, and doc test executions for historical flak
 ```rust
 pub struct TestCaseRunEntry {
     pub job_id: String,                  // Pipeline job identifier
-    pub repo_key: String,                // Repository key (e.g. "LMA1980/k3-core")
+    pub repo_key: String,                // Repository key (e.g. "LMA1980/jero-core")
     pub branch_key: String,              // Git branch or PR ref
     pub commit_sha: String,              // 40-char commit SHA
     pub crate_name: String,              // Cargo crate name

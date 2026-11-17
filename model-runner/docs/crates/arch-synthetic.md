@@ -3,7 +3,7 @@
 **Crate**: `arch-synthetic`  
 **Version**: `0.1.0` (Edition 2024, Rust 1.85)  
 **Role**: Synthetic reference architecture recipe for deterministic testing, verification, and end-to-end integration  
-**Repository**: [`LMA1980/arch-synthetic`](https://github.com/LMA1980/arch-synthetic)  
+**Repository**: [`LMA1980/jero-arch-synthetic`](https://github.com/LMA1980/jero-arch-synthetic)  
 **Rustdoc Reference**: [`arch_synthetic` API Reference](../../api/arch_synthetic/index.html)
 
 ---

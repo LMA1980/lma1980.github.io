@@ -3,7 +3,7 @@
 **Crate**: `kernels-rvv`  
 **Version**: `0.1.0` (Edition 2024, Rust 1.85)  
 **Role**: VLA RVV 1.0 vector loops and SpacemiT A100 Matrix Engine (IME) acceleration  
-**Repository**: [`LMA1980/kernels-rvv`](https://github.com/LMA1980/kernels-rvv)  
+**Repository**: [`LMA1980/jero-kernels-rvv`](https://github.com/LMA1980/jero-kernels-rvv)  
 **Rustdoc Reference**: [`kernels_rvv` API Reference](../../api/kernels_rvv/index.html)
 
 ---

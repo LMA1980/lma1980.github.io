@@ -3,7 +3,7 @@
 **Crate**: `action-runner`\
 **Version**: `0.2.0` (Edition 2021)\
 **Role**: Lightweight, bare-metal CI execution sidecar agent engineered for SpacemiT Key Stone K3 hardware\
-**Repository**: [`LMA1980/ActionRunner-rs`](https://github.com/LMA1980/ActionRunner-rs)\
+**Repository**: [`LMA1980/mu-ci-worker`](https://github.com/LMA1980/mu-ci-worker)\
 **Rustdoc Reference**: [`action_runner` API Reference](../../api/action_runner/index.html)
 
 ______________________________________________________________________
