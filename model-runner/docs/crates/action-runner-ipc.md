@@ -3,7 +3,7 @@
 **Crate**: `action-runner-ipc`\
 **Version**: `0.1.0` (Edition 2021)\
 **Role**: Zero-copy wire protocol framing, Apache Fory stage control tasks, and Apache Arrow streaming RecordBatch serialization\
-**Repository**: [`LMA1980/ActionRunner-ipc`](https://github.com/LMA1980/ActionRunner-ipc)\
+**Repository**: [`LMA1980/mu-ci-ipc`](https://github.com/LMA1980/mu-ci-ipc)\
 **Rustdoc Reference**: [`action_runner_ipc` API Reference](../../api/action_runner_ipc/index.html)
 
 ______________________________________________________________________

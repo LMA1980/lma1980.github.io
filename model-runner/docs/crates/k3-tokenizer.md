@@ -3,7 +3,7 @@
 **Crate**: `k3-tokenizer`  
 **Version**: `0.1.0` (Edition 2024, Rust 1.85)  
 **Role**: Decoupled tokenization, chat template evaluation, and streaming piece decoding on reserved active control threads  
-**Repository**: [`LMA1980/k3-tokenizer`](https://github.com/LMA1980/k3-tokenizer)  
+**Repository**: [`LMA1980/jero-tokenizer`](https://github.com/LMA1980/jero-tokenizer)  
 **Rustdoc Reference**: [`k3_tokenizer` API Reference](../../api/k3_tokenizer/index.html)
 
 ---

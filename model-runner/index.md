@@ -55,7 +55,7 @@ In-depth crate architecture guides and machine-generated Rustdoc API documentati
 
 ## 🔗 Related Repositories
 
-- [**LMA1980/model-runner**](https://github.com/LMA1980/model-runner) — Top-level repository and workspace orchestration.
-- [**k3-core**](https://github.com/LMA1980/k3-core) | [**k3-kv**](https://github.com/LMA1980/k3-kv) | [**k3-engine**](https://github.com/LMA1980/k3-engine) | [**k3-manager**](https://github.com/LMA1980/k3-manager)
-- [**kernels-rvv**](https://github.com/LMA1980/kernels-rvv) | [**arch-synthetic**](https://github.com/LMA1980/arch-synthetic) | [**k3-tokenizer**](https://github.com/LMA1980/k3-tokenizer)
-- [**ActionRunner-rs**](https://github.com/LMA1980/ActionRunner-rs) | [**ActionRunner-controller**](https://github.com/LMA1980/ActionRunner-controller) | [**ActionRunner-ipc**](https://github.com/LMA1980/ActionRunner-ipc) | [**ActionRunner-web**](https://github.com/LMA1980/ActionRunner-web)
+- [**LMA1980/jero-runner**](https://github.com/LMA1980/jero-runner) *(private)* — Top-level repository and workspace orchestration.
+- [**jero-core**](https://github.com/LMA1980/jero-core) | [**jero-kv-cache**](https://github.com/LMA1980/jero-kv-cache) | [**jero-engine**](https://github.com/LMA1980/jero-engine) | [**jero-manager**](https://github.com/LMA1980/jero-manager)
+- [**jero-kernels-rvv**](https://github.com/LMA1980/jero-kernels-rvv) | [**jero-arch-synthetic**](https://github.com/LMA1980/jero-arch-synthetic) | [**jero-tokenizer**](https://github.com/LMA1980/jero-tokenizer)
+- [**mu-ci-worker**](https://github.com/LMA1980/mu-ci-worker) | [**mu-ci-controller**](https://github.com/LMA1980/mu-ci-controller) | [**mu-ci-ipc**](https://github.com/LMA1980/mu-ci-ipc) | [**mu-ci-web**](https://github.com/LMA1980/mu-ci-web)

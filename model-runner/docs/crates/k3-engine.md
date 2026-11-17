@@ -3,7 +3,7 @@
 **Crate**: `k3-engine`  
 **Version**: `0.1.0` (Edition 2024, Rust 1.85)  
 **Role**: Low-level compute runtime, thread group synchronization, compute worker binary (`k3-worker`), and diagnostic profiler (`k3-diag`)  
-**Repository**: [`LMA1980/k3-engine`](https://github.com/LMA1980/k3-engine)  
+**Repository**: [`LMA1980/jero-engine`](https://github.com/LMA1980/jero-engine)  
 **Rustdoc Reference**:
 - [`k3_engine` API Reference](../../api/k3_engine/index.html)
 - [`k3_worker` API Reference](../../api/k3_worker/index.html)

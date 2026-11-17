@@ -3,7 +3,7 @@
 **Crate**: `k3-kv`  
 **Version**: `0.1.0` (Edition 2024, Rust 1.85)  
 **Role**: Policy-free context memory holder daemon and shared memory arena manager  
-**Repository**: [`LMA1980/k3-kv`](https://github.com/LMA1980/k3-kv)  
+**Repository**: [`LMA1980/jero-kv-cache`](https://github.com/LMA1980/jero-kv-cache)  
 **Rustdoc Reference**: [`k3_kv` API Reference](../../api/k3_kv/index.html)
 
 ---

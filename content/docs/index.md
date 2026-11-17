@@ -1,7 +1,7 @@
 # Jero-Mu Milestone 2 Documentation Portal
 
 <p align="center">
-  <a href="https://github.com/LMA1980/MuConsole">
+  <a href="https://github.com/LMA1980/mu-console">
     <img src="../../assets/logos/muconsole-vector-badge.svg" alt="MuConsole (Void Console) Vector Badge — >_∅ P1+P3" width="128"/>
   </a>
 </p>

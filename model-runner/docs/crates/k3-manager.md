@@ -3,7 +3,7 @@
 **Crate**: `k3-manager`  
 **Version**: `0.1.0` (Edition 2024, Rust 1.85)  
 **Role**: Control plane orchestration daemon, DuckDB CAS catalog, API frontends, admission queues, watchdog supervisor, and `k3-store` CLI  
-**Repository**: [`LMA1980/k3-manager`](https://github.com/LMA1980/k3-manager)  
+**Repository**: [`LMA1980/jero-manager`](https://github.com/LMA1980/jero-manager)  
 **Rustdoc Reference**:
 - [`k3_manager` API Reference](../../api/k3_manager/index.html)
 - [`k3_store` API Reference](../../api/k3_store/index.html)

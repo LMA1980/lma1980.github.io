@@ -3,7 +3,7 @@
 **Crate**: `action-runner-web`\
 **Version**: `0.1.0` (Edition 2021)\
 **Role**: Leptos CSR WebAssembly real-time CI queue monitor and job drill-down dashboard\
-**Repository**: [`LMA1980/ActionRunner-web`](https://github.com/LMA1980/ActionRunner-web)\
+**Repository**: [`LMA1980/mu-ci-web`](https://github.com/LMA1980/mu-ci-web)\
 **Rustdoc Reference**: [`action_runner_web` API Reference](../../api/action_runner_web/index.html)
 
 ______________________________________________________________________
