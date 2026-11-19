@@ -57,7 +57,7 @@ Uses standard RISC-V vector assembly instructions (`vsetvli`, `vle32.v`, `vfmacc
 
 To eliminate runtime repacking overhead during inference, `k3-manager` uses `kernels-rvv` to pre-convert quantized weights into derived IME tiles (`ime_tile_8x16`):
 - Keyed by `(source_digest, recipe_version, "ime_tile_8x16")`.
-- Saved in `/var/lib/k3/derived/`.
+- Saved in `/var/lib/jero-manager/derived/` (Phase 1 fallback `/var/lib/k3/derived/`).
 - Parallelized across available cores using `rayon`.
 
 ---

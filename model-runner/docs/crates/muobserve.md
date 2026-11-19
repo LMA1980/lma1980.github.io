@@ -104,7 +104,7 @@ ______________________________________________________________________
 
 ### 3.1 Hot Tier: Embedded DuckDB (`hot.duckdb`)
 
-- Located at `/var/lib/muobserve/hot.duckdb`.
+- Located at `/var/lib/mu-observable-hub/hot.duckdb` (Phase 1 fallback: `/var/lib/muobserve/hot.duckdb`).
 - Retains active telemetry for 7 days (`DEFAULT_HOT_RETENTION_DAYS = 7`).
 - Native columnar storage with vectorized execution.
 - Relational tables:
@@ -256,10 +256,10 @@ ______________________________________________________________________
 The `muobserve-cli` binary provides operational administration and legacy database migration:
 
 ```bash
-# Migrate historical ActionRunner DuckDB databases into centralized MuObserve
+# Migrate historical ActionRunner DuckDB databases into centralized mu-observable-hub
 muobserve-cli migrate-actionrunner \
   --source /var/lib/action-runner/db/ci.duckdb \
-  --target /var/lib/muobserve/hot.duckdb
+  --target /var/lib/mu-observable-hub/hot.duckdb
 
 # Run automated regression gate evaluation from CLI
 muobserve-cli benchmark-gate \
@@ -269,7 +269,7 @@ muobserve-cli benchmark-gate \
 
 # Assert canary SLO health
 muobserve-cli slo-check \
-  --service action-runner \
+  --service mu-ci-worker \
   --bake-seconds 300
 ```
 

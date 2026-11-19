@@ -78,7 +78,7 @@ k3-worker --model-id <id> --weights-fd <fd> --kv-fd <fd> --affinity <mask> --thr
 ### 4.2 Diagnostic CLI Binary (`k3-diag`)
 Standalone CLI tool for benchmarking and validating models on hardware:
 ```bash
-k3-diag --model /var/lib/k3/blobs/sha256/<hash> --prompt "Benchmark prompt" \
+k3-diag --model /var/lib/jero-manager/blobs/sha256/<hash> --prompt "Benchmark prompt" \
         --cluster both --split phase --ime on --threads 8 --cores 0xFF00 \
         --n-ctx 2048 --repeat 5 --summary --export-profile /tmp/cost_profile.json
 ```

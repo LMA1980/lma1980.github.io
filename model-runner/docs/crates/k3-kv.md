@@ -76,7 +76,7 @@ k3-manager                       k3-kv                          k3-worker
 ## 4. Hardware & System Invariants
 
 1. **`LimitMEMLOCK` Ceiling**: `k3-kv` runs under a strict bounded memlock ceiling (`29360128 KB` / 28 GiB) configured in `/etc/security/limits.d/99-modelrunner.conf` to preserve ~3.3 GiB headroom for the OS and kernel slab.
-2. **Systemd Sandboxing**: Runs as an isolated service unit (`k3-kv.service`) in `k3.slice` with `PrivateTmp=yes`, `ProtectSystem=strict`, and `CapabilityBoundingSet=CAP_IPC_LOCK`.
+2. **Systemd Sandboxing**: Runs as an isolated service unit (`jero-kv-cache.service`, Phase 1 fallback `k3-kv.service`) in `jero-runner.slice` (Phase 1 fallback `k3.slice`) with `PrivateTmp=yes`, `ProtectSystem=strict`, and `CapabilityBoundingSet=CAP_IPC_LOCK`.
 3. **Zero Policy**: `k3-kv` contains no model loading, tokenization, or scheduling logic. It performs pure arena lifecycle management.
 
 ---

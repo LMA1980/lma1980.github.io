@@ -6,16 +6,16 @@ This guide describes production deployment, resource isolation, systemd orchestr
 
 ## 1. Systemd Architecture & Service Units
 
-Model-Runner decouples memory holding from control-plane orchestration and compute worker execution across dedicated systemd service units contained within `k3.slice`.
+Model-Runner decouples memory holding from control-plane orchestration and compute worker execution across dedicated systemd service units contained within `jero-runner.slice` (Phase 1 dual-stack fallback alias: `k3.slice`):
 
 ```
-/sys/fs/cgroup/k3.slice/
-├── control/                     # model-runner.service (cores 6–7)
+/sys/fs/cgroup/jero-runner.slice/
+├── control/                     # jero-manager.service (cores 6–7)
 │   ├── cpuset.cpus = "6-7"
 │   └── cgroup.procs = [pid_manager]
-├── kv/                          # k3-kv.service (isolated arena holder)
+├── kv/                          # jero-kv-cache.service (isolated arena holder)
 │   └── cgroup.procs = [pid_kv]
-└── engines/                     # Delegated compute worker leaves
+└── engines/                     # Delegated compute worker leaves (jero-engine.service / jero-runner.service)
     ├── qwen2.5-7b/              # k3-worker (cores 8–15 on A100)
     │   ├── cpuset.cpus = "8-15"
     │   └── cgroup.procs = [pid_worker_1]
@@ -24,11 +24,13 @@ Model-Runner decouples memory holding from control-plane orchestration and compu
         └── cgroup.procs = [pid_worker_2]
 ```
 
-### 1.1 Slice Definition (`/etc/systemd/system/k3.slice`)
+> **Canonical Service Units (`<repo>.service`)**: Across the Phase 1 → Phase 2 systemd alignment, the runtime splits cleanly into `jero-runner.service` (top-level runtime), `jero-manager.service` (control plane & catalog), `jero-kv-cache.service` (KV arena holder), `jero-engine.service` (compute worker), `jero-manager-gc.{service,timer}` (scheduled storage GC), and `jero-manager-ext@.service` (templated external source/adapter instances). Phase 1 dual-stack hosts may temporarily retain `k3.slice`, `k3-kv.service`, `model-runner.service`, and `k3-store-gc.{service,timer}` aliases during cutover.
+
+### 1.1 Slice Definition (`/etc/systemd/system/jero-runner.slice`)
 
 ```ini
 [Unit]
-Description=Model-Runner Unified Isolation Slice
+Description=Jero-Runner Unified Isolation Slice
 Documentation=https://lma1980.github.io/model-runner/
 Before=slices.target
 
@@ -38,25 +40,25 @@ MemoryAccounting=yes
 TasksAccounting=yes
 ```
 
-### 1.2 Policy-Free KV Memory Holder (`/etc/systemd/system/k3-kv.service`)
+### 1.2 Policy-Free KV Memory Holder (`/etc/systemd/system/jero-kv-cache.service`)
 
 The KV holder service allocates and pre-faults shared-memory arenas via `memfd_create` and `mlock`. It contains zero scheduling policy and does not terminate when workers or managers restart.
 
 ```ini
 [Unit]
-Description=Model-Runner KV Context Memory Holder Daemon
+Description=Jero KV Context Memory Holder Daemon
 Documentation=https://lma1980.github.io/model-runner/
-After=network.target k3.slice
-PartOf=k3.slice
+After=network.target jero-runner.slice
+PartOf=jero-runner.slice
 
 [Service]
 Type=simple
-Slice=k3.slice
-User=k3
-Group=k3
-RuntimeDirectory=k3
+Slice=jero-runner.slice
+User=jero-runner
+Group=jero-runner
+RuntimeDirectory=jero-runner
 RuntimeDirectoryMode=0755
-ExecStart=/usr/local/bin/k3-kv --socket /run/k3/kv.sock
+ExecStart=/usr/local/bin/k3-kv --socket /run/jero-runner/kv.sock
 Restart=always
 RestartSec=2
 
@@ -67,7 +69,7 @@ MemoryMax=28G
 # Sandboxing
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/run/k3
+ReadWritePaths=/run/jero-runner
 PrivateTmp=yes
 CapabilityBoundingSet=CAP_IPC_LOCK
 
@@ -75,29 +77,30 @@ CapabilityBoundingSet=CAP_IPC_LOCK
 WantedBy=multi-user.target
 ```
 
-### 1.3 Compute Worker Daemon (`/etc/systemd/system/model-runner.service`)
+### 1.3 Compute Worker & Control Plane Daemons (`/etc/systemd/system/jero-runner.service`, `jero-manager.service`, `jero-engine.service`)
 
-The compute worker service runs the dedicated `k3-worker` daemon, executing neural network forward passes with pinned core affinity and attaching to `k3-kv` shared-memory arenas over Unix Domain Sockets:
+The runtime service (`jero-runner.service`, paired with `jero-manager.service` and `jero-engine.service`) executes neural network forward passes with pinned core affinity and attaches to `jero-kv-cache.service` shared-memory arenas over Unix Domain Sockets:
 
 ```ini
+# /etc/systemd/system/jero-runner.service
 [Unit]
-Description=Model-Runner Compute Worker Daemon
+Description=Jero-Runner Compute Worker Daemon
 Documentation=https://lma1980.github.io/model-runner/
-Requires=k3-kv.service
-After=k3-kv.service k3.slice
-PartOf=k3.slice
+Requires=jero-kv-cache.service
+After=jero-kv-cache.service jero-runner.slice
+PartOf=jero-runner.slice
 
 [Service]
 Type=simple
-Slice=k3.slice
-User=k3
-Group=k3
-RuntimeDirectory=k3
+Slice=jero-runner.slice
+User=jero-runner
+Group=jero-runner
+RuntimeDirectory=jero-runner
 RuntimeDirectoryMode=0755
-Environment=K3_STORE_ROOT=/var/lib/k3
-Environment=K3_CATALOG_PATH=/var/lib/k3/catalog.duckdb
+Environment=K3_STORE_ROOT=/var/lib/jero-manager
+Environment=K3_CATALOG_PATH=/var/lib/jero-manager/catalog.duckdb
 Environment=RUST_LOG=info
-ExecStart=/usr/local/bin/k3-worker --socket /run/k3/worker.sock --listen --model /var/lib/k3/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9 --cluster x100 --threads 6
+ExecStart=/usr/local/bin/k3-worker --socket /run/jero-runner/worker.sock --listen --model /var/lib/jero-manager/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9 --cluster x100 --threads 6
 Restart=always
 RestartSec=2
 
@@ -108,7 +111,7 @@ MemoryMax=28G
 # Sandboxing & Storage Access
 ProtectSystem=full
 ProtectHome=read-only
-ReadWritePaths=/run/k3 /var/lib/k3 /sys/fs/cgroup/k3.slice
+ReadWritePaths=/run/jero-runner /var/lib/jero-manager /sys/fs/cgroup/jero-runner.slice
 PrivateTmp=yes
 CapabilityBoundingSet=CAP_SYS_NICE CAP_SYS_RESOURCE CAP_IPC_LOCK
 
@@ -116,28 +119,28 @@ CapabilityBoundingSet=CAP_SYS_NICE CAP_SYS_RESOURCE CAP_IPC_LOCK
 WantedBy=multi-user.target
 ```
 
-### 1.4 Scheduled Storage Garbage Collection (`k3-store-gc.service` & `.timer`)
+### 1.4 Scheduled Storage Garbage Collection (`jero-manager-gc.service` & `.timer`)
 
 ```ini
-# /etc/systemd/system/k3-store-gc.service
+# /etc/systemd/system/jero-manager-gc.service
 [Unit]
-Description=Model-Runner Safe Storage Garbage Collection Sweep
+Description=Jero-Manager Safe Storage Garbage Collection Sweep
 Documentation=https://lma1980.github.io/model-runner/
 After=local-fs.target
 
 [Service]
 Type=oneshot
-User=k3
-Group=k3
-ExecStart=/usr/local/bin/k3-store gc --store-root /var/lib/k3
+User=jero-runner
+Group=jero-runner
+ExecStart=/usr/local/bin/k3-store gc --store-root /var/lib/jero-manager
 ProtectSystem=full
-ReadWritePaths=/var/lib/k3
+ReadWritePaths=/var/lib/jero-manager
 ```
 
 ```ini
-# /etc/systemd/system/k3-store-gc.timer
+# /etc/systemd/system/jero-manager-gc.timer
 [Unit]
-Description=Daily Model-Runner Storage Garbage Collection Timer
+Description=Daily Jero-Manager Storage Garbage Collection Timer
 Documentation=https://lma1980.github.io/model-runner/
 
 [Timer]
@@ -154,9 +157,9 @@ WantedBy=timers.target
 
 Model-Runner enforces hardware core isolation using native cgroup v2 domain controllers without container runtimes (runc/Docker):
 
-1. **Top-Down Controller Delegation**: intermediate ancestor directories between `/sys/fs/cgroup/k3.slice` and `.../engines/<model>` strictly write `+cpuset` to `cgroup.subtree_control` in top-down hierarchy order before creating leaf nodes.
-2. **Control Leaf Placement**: `k3-manager` moves its process ID into `/sys/fs/cgroup/k3.slice/control/cgroup.procs` and restricts `cpuset.cpus` to cores `6-7` (`0x00C0`), guaranteeing uninterrupted control-plane execution during forward-pass saturation.
-3. **Engine Leaf Placement**: when spawning a worker process, `k3-manager` creates `/sys/fs/cgroup/k3.slice/engines/<model_id>`, writes the assigned physical core list to `cpuset.cpus` (e.g. `0-5` for X100, `8-15` for A100), and writes the worker PID to `cgroup.procs`.
+1. **Top-Down Controller Delegation**: intermediate ancestor directories between `/sys/fs/cgroup/jero-runner.slice` and `.../engines/<model>` strictly write `+cpuset` to `cgroup.subtree_control` in top-down hierarchy order before creating leaf nodes.
+2. **Control Leaf Placement**: `k3-manager` (`jero-manager.service`) moves its process ID into `/sys/fs/cgroup/jero-runner.slice/control/cgroup.procs` and restricts `cpuset.cpus` to cores `6-7` (`0x00C0`), guaranteeing uninterrupted control-plane execution during forward-pass saturation.
+3. **Engine Leaf Placement**: when spawning a worker process (`jero-engine.service`), `k3-manager` creates `/sys/fs/cgroup/jero-runner.slice/engines/<model_id>`, writes the assigned physical core list to `cpuset.cpus` (e.g. `0-5` for X100, `8-15` for A100), and writes the worker PID to `cgroup.procs`.
 4. **Automatic OS Affinity Fallback**: if running in unprivileged test harnesses, non-Linux development hosts, or if `/sys/fs/cgroup` returns `EACCES` / `ENOENT`, the runtime automatically falls back to `sched_setaffinity` syscalls.
 
 ---
@@ -187,13 +190,13 @@ Setting `RLIMIT_MEMLOCK` to `unlimited` on embedded hardware risks catastrophic 
 ```ini
 # /etc/security/limits.d/99-modelrunner.conf
 # Preserves ~3.3 GiB OS headroom on 32 GiB SpacemiT K3 boards
-k3       soft   memlock   29360128
-k3       hard   memlock   29360128
+jero-runner soft   memlock   29360128
+jero-runner hard   memlock   29360128
 ```
 
 Verify the limits under the target service account:
 ```bash
-sudo -u k3 bash -c "ulimit -l"
+sudo -u jero-runner bash -c "ulimit -l"
 # Expected output: 29360128
 ```
 
@@ -201,10 +204,10 @@ sudo -u k3 bash -c "ulimit -l"
 
 ## 5. Content-Addressed Model Store Layout
 
-The store root defaults to `/var/lib/k3` (configurable via `K3_STORE_ROOT` or `--store-root`):
+The store root defaults to `/var/lib/jero-manager` (Phase 1 fallback: `/var/lib/k3` or `/var/lib/k3-store`; configurable via `K3_STORE_ROOT` or `--store-root`):
 
 ```
-/var/lib/k3/
+/var/lib/jero-manager/
 ├── catalog.duckdb               # Relational catalog & session metadata
 ├── catalog.duckdb.wal           # DuckDB write-ahead log
 ├── blobs/
@@ -254,13 +257,13 @@ CREATE TABLE storage_config (config_key TEXT PRIMARY KEY, config_value TEXT NOT 
 
 ```bash
 # Checkpoint the DuckDB WAL
-duckdb /var/lib/k3/catalog.duckdb "CHECKPOINT;"
+duckdb /var/lib/jero-manager/catalog.duckdb "CHECKPOINT;"
 
 # Check database size and integrity
-duckdb /var/lib/k3/catalog.duckdb "PRAGMA database_size;"
+duckdb /var/lib/jero-manager/catalog.duckdb "PRAGMA database_size;"
 
 # Export atomic backup to Parquet directory
-duckdb /var/lib/k3/catalog.duckdb "EXPORT DATABASE '/var/backups/k3/snapshot-$(date +%Y%m%d)' (FORMAT PARQUET);"
+duckdb /var/lib/jero-manager/catalog.duckdb "EXPORT DATABASE '/var/backups/jero-manager/snapshot-$(date +%Y%m%d)' (FORMAT PARQUET);"
 ```
 
 ---

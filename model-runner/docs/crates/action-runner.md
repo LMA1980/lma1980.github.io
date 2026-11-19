@@ -44,8 +44,8 @@ Spawns pipeline tasks using asynchronous process supervisors:
 - Streams Apache Arrow record batches of log lines and resource metrics directly to `action-runner-controller`.
 - Orchestrates distributed `sccache` compilation caching per stage and per step:
   - `StageRunner::resolve_effective_sccache_mode`: Resolves the stage-level pre-flight requirement across eligible Rust compilation steps (`cargo-check`, `cargo-test`, `cargo-clippy`, `cargo-build`, `cargo-nextest`, `cargo-bench`, `cargo-doc`), returning `SccacheMode::Mandatory` if any eligible step is `Mandatory`, `SccacheMode::Try` if any eligible step is `Try`, or `SccacheMode::Disabled`.
-  - `StageRunner::ensure_sccache_server_healthy`: Runs a 5-second bounded `sccache --show-stats` check prior to stage execution, automatically restarting the local `sccache` daemon if it was hijacked into `Local disk` mode while `SCCACHE_BUCKET` is configured in `/etc/action-runner/sccache.env` or if its local socket is wedged.
-  - `StageRunner::compute_sccache_env`: Injects `RUSTC_WRAPPER=sccache`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0` (anti-race default), and `/etc/action-runner/sccache.env` variables strictly into eligible Rust compilation commands while excluding `cargo-llvm-cov`, `cargo-audit`, `cargo-fmt`, and `cargo-miri`.
+  - `StageRunner::ensure_sccache_server_healthy`: Runs a 5-second bounded `sccache --show-stats` check prior to stage execution, automatically restarting the local `sccache` daemon if it was hijacked into `Local disk` mode while `SCCACHE_BUCKET` is configured in `/etc/mu-ci-worker/sccache.env` (Phase 1 fallback: `/etc/action-runner/sccache.env`) or if its local socket is wedged.
+  - `StageRunner::compute_sccache_env`: Injects `RUSTC_WRAPPER=sccache`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0` (anti-race default), and `sccache.env` variables strictly into eligible Rust compilation commands while excluding `cargo-llvm-cov`, `cargo-audit`, `cargo-fmt`, and `cargo-miri`.
   - `StageRunner::capture_sccache_stats` & `SccacheStatsDelta::saturating_delta`: Snapshots `sccache --show-stats` before and after stage execution and attaches the monotonic `SccacheStatsDelta` to `StageCompletionReport`.
 
 ### 2.3 `WorkerConfig`
@@ -56,7 +56,7 @@ Defines agent operational parameters:
 - `controller_url`: WebSocket URL of the controller daemon.
 - `max_concurrent_slots`: Enforced at `1` (`max_slots = 1`) while bounding per-stage parallelism via thread budget environment variables (`CARGO_BUILD_JOBS`, `RAYON_NUM_THREADS`, `RUST_TEST_THREADS`).
 - `workspace_root`: Base working directory for repository checkouts.
-- `sccache_env_file`: Optional path to `/etc/action-runner/sccache.env` (`WorkerConfig::load_sccache_env()` parses `KEY=VALUE` pairs and strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` so wrapper injection cannot be forced onto non-compilation tools).
+- `sccache_env_file`: Optional path to `/etc/mu-ci-worker/sccache.env` (Phase 1 fallback: `/etc/action-runner/sccache.env`; `WorkerConfig::load_sccache_env()` parses `KEY=VALUE` pairs and strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` so wrapper injection cannot be forced onto non-compilation tools).
 
 ______________________________________________________________________
 
@@ -75,8 +75,8 @@ ______________________________________________________________________
 
 Enable `sccache` on any `action-runner` worker node by configuring the binary and environment file:
 
-1. **Install `sccache` Binary**: Place `sccache` in `/usr/local/bin/sccache` (`0755`). On startup, `action-runner` checks `which sccache` and automatically advertises `"sccache"` in `NodeCapabilities.supported_tools`.
-1. **Create `/etc/action-runner/sccache.env` (`0600`, `action-runner:action-runner`)**:
+1. **Install `sccache` Binary**: Place `sccache` in `/usr/local/bin/sccache` (`0755`). On startup, `mu-ci-worker.service` (`action-runner`) checks `which sccache` and automatically advertises `"sccache"` in `NodeCapabilities.supported_tools`.
+1. **Create `/etc/mu-ci-worker/sccache.env` (`0600`, `mu-ci-worker:mu-ci-worker`; Phase 1 fallback `/etc/action-runner/sccache.env`)**:
    ```ini
    SCCACHE_BUCKET=ci-sccache
    SCCACHE_ENDPOINT=http://192.0.2.10:3900
@@ -88,20 +88,20 @@ Enable `sccache` on any `action-runner` worker node by configuring the binary an
    SCCACHE_SERVER_PORT=4226
    SCCACHE_IDLE_TIMEOUT=0
    ```
-1. **Verify `MuIsolation` Landlock Grants**: Ensure `.actionrunner/security.yml` and `/etc/mu-isolation/ceiling.yml` grant `/usr/local/bin` and `/usr/bin` in `read_paths` and `exec_paths`.
+1. **Verify `MuIsolation` Landlock Grants**: Ensure `.muci/security.yml` (Phase 1 fallback `.actionrunner/security.yml`) and `/etc/mu-isolation/ceiling.yml` grant `/usr/local/bin` and `/usr/bin` in `read_paths` and `exec_paths`.
 1. **Verify Under Service Account**:
    ```bash
-   sudo -u action-runner sh -a -c '. /etc/action-runner/sccache.env && sccache --stop-server >/dev/null 2>&1 || true && sccache --start-server && sccache --show-stats'
-   sudo systemctl restart action-runner
+   sudo -u mu-ci-worker sh -a -c '. /etc/mu-ci-worker/sccache.env && sccache --stop-server >/dev/null 2>&1 || true && sccache --start-server && sccache --show-stats'
+   sudo systemctl restart mu-ci-worker.service
    ```
 
 ______________________________________________________________________
 
 ## 5. Hardware & Platform Invariants
 
-1. **Bare-Metal Sandboxing**: Runs under isolated system user `action-runner` with `ProtectHome=read-only`.
+1. **Bare-Metal Sandboxing**: Runs under isolated system user (`mu-ci-worker`, Phase 1: `action-runner`) in `mu-ci-isolation.slice` with `ProtectHome=read-only`.
 1. **Git-Only Synchronization**: Always synchronizes code via Git; avoids non-atomic file sync (`rsync`).
-1. **Target Toolchain Verification**: Directly integrates with native RISC-V Rust toolchains (`/var/lib/action-runner/.rustup`) and GFM table formatters.
+1. **Target Toolchain Verification**: Directly integrates with native RISC-V Rust toolchains (`/var/lib/mu-ci-worker/.rustup`, Phase 1: `/var/lib/action-runner/.rustup`) and GFM table formatters.
 
 ______________________________________________________________________
 

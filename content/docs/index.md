@@ -34,38 +34,38 @@ ______________________________________________________________________
 
 ### 1. Declarative Pipeline Configuration & Distributed Compiler Caching
 
-- [**ActionRunner.yml Syntax Reference**](actionrunner-syntax.md) (`actionrunner-syntax.md` — Issue [#10](https://github.com/LMA1980/lma1980.github.io/issues/10))
+- [**`.muci/mu-ci.yml` (`ActionRunner.yml`) Syntax Reference**](actionrunner-syntax.md) (`actionrunner-syntax.md` — Issue [#10](https://github.com/LMA1980/lma1980.github.io/issues/10))
   - Complete Version 3 schema specification: `tasks`, `stages`, `on_action`, and `sccache` (`disabled`, `try`, `mandatory`).
-  - Compile-time `ActionRunner-tools` `ToolAdapter` registry and strict shell metacharacter prohibition (`ProhibitedShellInvocation`).
-  - Topological stage DAG resolution, cycle detection (`CycleDetected`), `exclusive: true` worker draining, and `max_concurrent_per_node: 1` single-slot execution.
-  - Three-phase configuration migration strategy from legacy `.actionrunner/on-*.yml`.
+  - Compile-time `mu-ci-tools` (`ActionRunner-tools`) `ToolAdapter` registry and strict shell metacharacter prohibition (`ProhibitedShellInvocation`).
+  - Topological stage DAG resolution, cycle detection (`CycleDetected`), `exclusive: true` worker draining, and `max_concurrent_per_node: 1` single-slot execution (`mu-ci-worker.service`).
+  - Three-phase configuration migration strategy from legacy `.actionrunner/on-*.yml` and `.actionrunner/ActionRunner.yml`.
 - [**Operator & Workflow Guide: Distributed `sccache` Compilation Caching**](sccache-guide.md) (`sccache-guide.md`)
   - How `sccache` influences your CI experience: cold-cache first builds (5–10% overhead) vs. warm-cache subsequent builds (60–85% speedup), automatic `CARGO_INCREMENTAL=0` enforcement, cross-node toolchain alignment, and why `cargo-llvm-cov`/`cargo-miri` intentionally bypass caching.
-  - Step-by-step operator installation on both `x86_64`/`aarch64` (static musl releases) and `riscv64` SpacemiT K3 (native source build under the `action-runner` service account).
-  - Choosing and configuring Local Disk (`SCCACHE_DIR`) vs. Shared S3/Garage/MinIO (`SCCACHE_BUCKET`) in `/etc/action-runner/sccache.env`, daemon hijack auto-recovery, and end-to-end verification walkthroughs.
+  - Step-by-step operator installation on both `x86_64`/`aarch64` (static musl releases) and `riscv64` SpacemiT K3 (native source build under the `mu-ci-worker` / `action-runner` service account).
+  - Choosing and configuring Local Disk (`SCCACHE_DIR`) vs. Shared S3/Garage/MinIO (`SCCACHE_BUCKET`) in `/etc/mu-ci-worker/sccache.env` (Phase 1 fallback: `/etc/action-runner/sccache.env`), daemon hijack auto-recovery, and end-to-end verification walkthroughs.
 
 ### 2. Multi-Layer Sandboxing & Isolation
 
-- [**MuIsolation Dual-Backend Sandbox Model**](isolation-model.md) (`isolation-model.md` — Issue [#11](https://github.com/LMA1980/lma1980.github.io/issues/11))
-  - 3-Layer monotonic privilege attenuation: Host Ceiling (`/etc/mu-isolation/ceiling.yml`) $\\cap$ Repository Profile (`.actionrunner/security.yml`) $\\cap$ Task Constraints $\\to$ fail-closed `SecurityGrantDenied`.
-  - `KernelSandbox`: Linux Landlock LSM, namespaces (`CLONE_NEWNS`, `CLONE_NEWNET`, `CLONE_NEWPID`), cgroupv2, `PR_SET_NO_NEW_PRIVS`, seccomp-bpf, bounded `RLIMIT_MEMLOCK` (28 GiB / `29360128 KB`), and conditional `/proc/set_ai_thread` registration on SpacemiT A100 matrix clusters.
+- [**`mu-ci-isolation` (`MuIsolation`) Dual-Backend Sandbox Model**](isolation-model.md) (`isolation-model.md` — Issue [#11](https://github.com/LMA1980/lma1980.github.io/issues/11))
+  - 3-Layer monotonic privilege attenuation: Host Ceiling (`/etc/mu-isolation/ceiling.yml`) $\\cap$ Repository Profile (`.muci/security.yml`, Phase 1 fallback `.actionrunner/security.yml`) $\\cap$ Task Constraints $\\to$ fail-closed `SecurityGrantDenied`.
+  - `KernelSandbox` (`mu-ci-isolation.slice`): Linux Landlock LSM, namespaces (`CLONE_NEWNS`, `CLONE_NEWNET`, `CLONE_NEWPID`), cgroupv2, `PR_SET_NO_NEW_PRIVS`, seccomp-bpf, bounded `RLIMIT_MEMLOCK` (28 GiB / `29360128 KB`), and conditional `/proc/set_ai_thread` registration on SpacemiT A100 matrix clusters.
   - `HypervisorSandbox`: Hardware-assisted `/dev/kvm` microVMs on RISC-V Hypervisor (`H`) extension and Intel VT-x.
 
 ### 3. Artifact Registry & Package Distribution
 
-- [**MuRegist Cargo Sparse Registry Guide**](muregist-guide.md) (`muregist-guide.md` — Issue [#14](https://github.com/LMA1980/lma1980.github.io/issues/14))
-  - RFC 2789 Cargo Sparse HTTP Index endpoints and client `.cargo/config.toml` setup.
+- [**`mu-registry` (`MuRegist`) Cargo Sparse Registry Guide**](muregist-guide.md) (`muregist-guide.md` — Issue [#14](https://github.com/LMA1980/lma1980.github.io/issues/14))
+  - RFC 2789 Cargo Sparse HTTP Index endpoints and client `.cargo/config.toml` setup (`mu-registry.service`).
   - Native `cargo publish` binary multipart framing upload (`PUT /api/v1/crates/new`).
-  - SHA-256 Content-Addressed Store (CAS) layout with atomic temporary file writes and embedded DuckDB metadata catalog.
+  - SHA-256 Content-Addressed Store (CAS) layout under `/var/lib/mu-registry/` with atomic temporary file writes and embedded DuckDB metadata catalog.
   - Canary staging API (`POST /api/v1/canary/publish`, `GET /api/v1/canary/status`, `POST /api/v1/canary/{digest}/taint`, `POST /api/v1/canary/{digest}/promote`) with `step-ca` mTLS and Argon2id scoped bearer tokens.
 
 ### 4. Continuous Delivery & Zero-Downtime Rollouts
 
-- [**MuConDe Continuous Delivery A/B Deployment Guide**](muconde-guide.md) (`muconde-guide.md` — Issue [#15](https://github.com/LMA1980/lma1980.github.io/issues/15))
-  - Declarative deployment contracts (`.muconde/MuConDe.yml`) with automated integration test gating.
-  - Idle cluster polling (`active_slots == 0`) and TTL-bounded deployment leases to eliminate CI/CD resource contention.
-  - Dual Btrfs subvolumes (`@a` and `@b` under `/srv/muconde/<service>/`) with atomic symlink pointer swaps (`symlink()` + `rename()`).
-  - Active post-swap health watchdog and sub-second instant rollback (`< 1s`) with automatic candidate digest tainting on MuRegist.
+- [**`mu-cd` (`MuConDe`) Continuous Delivery A/B Deployment Guide**](muconde-guide.md) (`muconde-guide.md` — Issue [#15](https://github.com/LMA1980/lma1980.github.io/issues/15))
+  - Declarative deployment contracts (`.mucd/MuConDe.yml`, Phase 1 fallback `.muconde/MuConDe.yml`) with automated integration test gating.
+  - Idle cluster polling (`active_slots == 0`) and TTL-bounded deployment leases between `mu-cd-controller.service` and `mu-ci-controller.service` to eliminate CI/CD resource contention.
+  - Dual Btrfs subvolumes (`@a` and `@b` under `/srv/mucd/<service>/`, Phase 1 fallback `/srv/muconde/<service>/`) managed by `mu-cd-agent.service` with atomic symlink pointer swaps (`symlink()` + `rename()`).
+  - Active post-swap health watchdog and sub-second instant rollback (`< 1s`) with automatic candidate digest tainting on `mu-registry`.
 
 ______________________________________________________________________
 
@@ -74,8 +74,8 @@ ______________________________________________________________________
 All components documented across Milestone 2 adhere strictly to the following foundational invariants:
 
 1. **Two-Tier Licensing Policy**:
-   - **Libraries, IPC Crates & Sandboxing Engines (`LGPL-3.0-only WITH LGPL-3.0-linking-exception`)**: `MuIsolation`, `ActionRunner-ipc`, `MuConDe-ipc`, `ActionRunner-tools`.
-   - **Daemons, Controllers, Agents & Web Frontends (`AGPL-3.0-only`)**: `ActionRunner-controller`, `MuRegist`, `MuConDe-controller`, `MuConDe-agent`.
+   - **Libraries, IPC Crates & Sandboxing Engines (`LGPL-3.0-only WITH LGPL-3.0-linking-exception`)**: `mu-ci-isolation` (`MuIsolation`), `mu-ci-ipc`, `mu-cd-ipc`, `mu-ci-tools`.
+   - **Daemons, Controllers, Agents & Web Frontends (`AGPL-3.0-only`)**: `mu-ci-controller`, `mu-ci-worker`, `mu-ci-web`, `mu-registry`, `mu-cd-controller`, `mu-cd-agent`.
 1. **Monotonic Privilege Attenuation**: Security grants may only be narrowed downstream. Attempts to escalate privileges beyond an operator ceiling fail closed prior to process execution.
 1. **Bounded Memory Ceilings**: Production nodes restrict `RLIMIT_MEMLOCK` to bounded limits (e.g. 28 GiB on 32 GB RAM nodes) to prevent kernel slab exhaustion.
 1. **Zero Lab Topology Leakage**: Public documentation, issues, and code must use generic placeholders (`worker-riscv64`, `ci.internal`, `192.0.2.10`) and never expose private lab infrastructure.

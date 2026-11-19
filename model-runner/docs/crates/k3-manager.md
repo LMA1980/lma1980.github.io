@@ -16,7 +16,7 @@
 1. **Network APIs**: Exposes OpenAI-compatible (`/v1/models`, `/v1/chat/completions`) and Anthropic Claude-compatible (`/v1/messages`) HTTP/SSE endpoints.
 2. **DuckDB CAS Persistence**: Maintains cryptographic content-addressed storage (CAS), model aliases, manifests, token budgets, and single-row session metadata using pure DuckDB (`duckdb`).
 3. **Queue Management & Scheduling**: Enforces admission queue ceilings (default: 64 requests), streams SSE keep-alive frames (`: keep-alive`), emits queue positions (`: queue_position=<pos>`), and arbitrates multi-model time-slicing.
-4. **Worker Supervision & Isolation**: Moves itself to `/sys/fs/cgroup/k3.slice/control`, creates delegated worker leaves (`.../engines/<model>`), and configures `cpuset.cpus`.
+4. **Worker Supervision & Isolation**: Moves itself to `/sys/fs/cgroup/jero-runner.slice/control` (Phase 1 fallback `/sys/fs/cgroup/k3.slice/control`), creates delegated worker leaves (`.../engines/<model>`), and configures `cpuset.cpus`.
 5. **Health Recovery Watchdog**: Runs `HealthSupervisor` pinned to spare recovery core 5 (`0x0020`), detecting worker stalls and preempting runaway workloads with zero downtime.
 6. **Storage CLI (`k3-store`)**: Produces the standalone storage administration tool.
 
