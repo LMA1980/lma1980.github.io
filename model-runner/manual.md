@@ -21,7 +21,7 @@ k3-store [OPTIONS] <COMMAND> [ARGS...]
 ### Global Options
 | Option | Environment Variable | Default | Description |
 |---|---|---|---|
-| `--store-root <PATH>` | `K3_STORE_ROOT` | `/var/lib/k3` | Path to store root directory containing `blobs/`, `manifests/`, `models/`, and `catalog.duckdb`. |
+| `--store-root <PATH>` | `K3_STORE_ROOT` | `/var/lib/jero-manager` | Path to store root directory containing `blobs/`, `manifests/`, `models/`, and `catalog.duckdb` (Phase 1 fallback: `/var/lib/k3`). |
 | `--json` | — | `false` | Emits output in machine-readable, formatted JSON. |
 | `-h, --help` | — | — | Displays the command help screen and exits. |
 
@@ -48,7 +48,7 @@ Inspects active shared locks and memory mappings for a specific content digest, 
 - **Example Human Output**:
   ```text
   Blob:        b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9
-  Path:        /var/lib/k3/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9
+  Path:        /var/lib/jero-manager/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9
   Size:        4325881856 bytes
   References:  2 active (["huggingface/Qwen/Qwen2.5-7B/latest", "local/qwen7b/v1"])
   Gate 1 (flock): SHARED LOCK HELD (active worker)
@@ -60,7 +60,7 @@ Inspects active shared locks and memory mappings for a specific content digest, 
   ```json
   {
     "digest": "b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9",
-    "file_path": "/var/lib/k3/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9",
+    "file_path": "/var/lib/jero-manager/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9",
     "size_bytes": 4325881856,
     "ref_count": 2,
     "referencing_sources": [
@@ -74,7 +74,7 @@ Inspects active shared locks and memory mappings for a specific content digest, 
         "comm": "k3-worker",
         "address_range": "0x7fff20000000-0x7fff30000000",
         "permissions": "r--p",
-        "mapped_path": "/var/lib/k3/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9"
+        "mapped_path": "/var/lib/jero-manager/blobs/sha256/b7e9411c52109403a73c1f4e04f981e1136b6f38aa70494cf0785f79a0b98bc9"
       }
     ]
   }
@@ -145,13 +145,13 @@ Resolves a human-browsable model alias or cryptographic digest, displaying manif
    - `OllamaAdapter`: Ingests model blobs and extracts manifests from Ollama libraries.
    - `LocalFileAdapter`: Ingests pre-existing `.gguf` and `.safetensors` files from disk.
 2. **Staging & Promotion Pipeline (`StagingPipeline`)**:
-   - Downloads stream to temporary staging files in `/var/lib/k3/staging/staging_<uuid>.part`.
+   - Downloads stream to temporary staging files in `/var/lib/jero-manager/staging/staging_<uuid>.part`.
    - On-the-fly streaming SHA-256 digest calculation and format header verification (`GGUF` magic `0x46554747` or SafeTensors JSON).
-   - Atomic rename (`promote_staged_blob`) into `/var/lib/k3/blobs/sha256/<digest>`.
+   - Atomic rename (`promote_staged_blob`) into `/var/lib/jero-manager/blobs/sha256/<digest>`.
 3. **Manifest & Alias Registration (`ContentAddressedStore`)**:
-   - Writes canonical JSON manifest to `/var/lib/k3/manifests/sha256/<manifest_digest>.json`.
+   - Writes canonical JSON manifest to `/var/lib/jero-manager/manifests/sha256/<manifest_digest>.json`.
    - Records metadata and tracks blob reference counts in DuckDB (`catalog.duckdb`).
-   - Creates human-browsable relative symlinks under `/var/lib/k3/models/<source>/<namespace>/<name>/<tag>`.
+   - Creates human-browsable relative symlinks under `/var/lib/jero-manager/models/<source>/<namespace>/<name>/<tag>`.
 4. **Alias Unlinking & Reclamation**:
    - Inactive model aliases are unlinked via the CAS API (`ContentAddressedStore::remove_alias`) or DuckDB catalog operations.
    - Unlinking an alias removes the directory symlinks and decrements the blob reference count in DuckDB without immediately deleting the underlying weight file.
@@ -161,7 +161,7 @@ Resolves a human-browsable model alias or cryptographic digest, displaying manif
 
 ## 2. Configuration File Schema
 
-Model Runner defines its canonical configuration specification in `/etc/k3/config.toml` (or `$K3_CONFIG_PATH`). This specification defines the planned parameters governing storage tiers, control plane core partitioning, HTTP server limits, admission queues, health watchdogs, and multi-tenant resource quotas.
+Model Runner defines its canonical configuration specification in `/etc/jero-runner/config.toml` (Phase 1 fallback: `/etc/k3/config.toml`, or `$K3_CONFIG_PATH`). This specification defines the planned parameters governing storage tiers, control plane core partitioning, HTTP server limits, admission queues, health watchdogs, and multi-tenant resource quotas.
 
 ### Annotated `config.toml` Specification
 
@@ -173,13 +173,13 @@ Model Runner defines its canonical configuration specification in `/etc/k3/confi
 [store]
 # Absolute path to the content-addressed store root (US-18, ADR-036).
 # Can reside on primary flash or dedicated secondary NVMe storage.
-root_path = "/var/lib/k3"
+root_path = "/var/lib/jero-manager"
 
 # Path to the DuckDB relational metadata catalog.
-catalog_path = "/var/lib/k3/catalog.duckdb"
+catalog_path = "/var/lib/jero-manager/catalog.duckdb"
 
 # Temporary download staging directory.
-staging_dir = "/var/lib/k3/staging"
+staging_dir = "/var/lib/jero-manager/staging"
 
 # High-water mark storage threshold in bytes (e.g., 100 GiB) (US-22 Scenario 2).
 # Crossing this emits an operational warning; it never triggers silent automatic deletions.

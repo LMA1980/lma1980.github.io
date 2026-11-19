@@ -14,11 +14,11 @@ In ActionRunner, `sccache` policy defaults to **`try`** (`SccacheMode::Try`).
 
 - **Before `sccache` is installed on a worker**:
   `WorkerConfig::detect_sccache_bin()` sees no `sccache` binary, does not advertise the `"sccache"` worker tag, and every pipeline in `try` mode runs normal, uncached `cargo` builds with zero errors.
-- **The moment you install `/usr/local/bin/sccache` on a worker and restart `action-runner`**:
-  The worker automatically detects the binary, appends `"sccache"` to its advertised capability `tags`, and **immediately begins caching all eligible Rust and WASM compilation tasks across every repository**—without requiring you to edit existing `.actionrunner/ActionRunner.yml` files!
+- **The moment you install `/usr/local/bin/sccache` on a worker and restart `mu-ci-worker.service`** (Phase 1 alias: `action-runner-worker.service`):
+  The worker automatically detects the binary, appends `"sccache"` to its advertised capability `tags`, and **immediately begins caching all eligible Rust and WASM compilation tasks across every repository**—without requiring you to edit existing `.muci/mu-ci.yml` (or Phase 1 `.actionrunner/ActionRunner.yml`) files!
 - **How to opt out on a specific worker or workflow**:
-  - **Per-worker opt-out**: Set `ACTION_RUNNER_SCCACHE_BIN=off` in `/etc/action-runner/worker.env`.
-  - **Per-workflow, per-stage, or per-task opt-out**: Set `sccache: false` in `.actionrunner/ActionRunner.yml`.
+  - **Per-worker opt-out**: Set `ACTION_RUNNER_SCCACHE_BIN=off` in `/etc/mu-ci-worker/worker.env` (Phase 1 fallback: `/etc/action-runner/worker.env`).
+  - **Per-workflow, per-stage, or per-task opt-out**: Set `sccache: false` in `.muci/mu-ci.yml` (or `.actionrunner/ActionRunner.yml`).
 
 ### 1.2 Cold Cache vs. Warm Cache (Build #1 vs. Build #2+)
 
@@ -41,9 +41,9 @@ Rust's built-in incremental compilation (`-C incremental=...`) relies on fine-gr
 
 ### 1.4 Disk Space & Network Bandwidth Considerations
 
-- **If you install `sccache` *without* `/etc/action-runner/sccache.env` (Local Disk Default)**:
-  `sccache` automatically stores cached artifacts on the worker's local disk (`/var/lib/action-runner/.cache/sccache`, defaulting to a **`10 GiB`** LRU ceiling unless `SCCACHE_CACHE_SIZE` is configured). Ensure `/var/lib/action-runner` has at least `15–20 GiB` of free disk space.
-- **If you configure `/etc/action-runner/sccache.env` with S3 / Garage / MinIO (Shared Cluster Cache)**:
+- **If you install `sccache` *without* `/etc/mu-ci-worker/sccache.env` (Phase 1 fallback: `/etc/action-runner/sccache.env`) (Local Disk Default)**:
+  `sccache` automatically stores cached artifacts on the worker's local disk (`/var/lib/mu-ci-worker/.cache/sccache` — or `/var/lib/action-runner/.cache/sccache` during Phase 1 — defaulting to a **`10 GiB`** LRU ceiling unless `SCCACHE_CACHE_SIZE` is configured). Ensure the worker state volume has at least `15–20 GiB` of free disk space.
+- **If you configure `/etc/mu-ci-worker/sccache.env` with S3 / Garage / MinIO (Shared Cluster Cache)**:
   Compiled `.rlib` artifacts are uploaded and downloaded over HTTP(S) to your S3 endpoint (`SCCACHE_BUCKET`). During heavy parallel builds (`CARGO_BUILD_JOBS=6` or `8`), expect bursty LAN traffic between workers and your S3 server. Always deploy your S3/Garage cache server on the same low-latency local network as your worker nodes.
 
 ### 1.5 Cross-Compilation Challenges & Multi-Architecture Cache Sharing (`x86_64` ↔ `riscv64` / `aarch64`)
@@ -78,7 +78,7 @@ Running `sccache` across a heterogeneous cluster (where `x86_64` servers cross-c
 
 Operators often notice that `cargo-clippy` and `cargo-test` complete in seconds via `sccache`, whereas the `coverage` (`cargo-llvm-cov`) or `miri` (`cargo-miri`) stage compiles from scratch. This is intentional:
 
-| Tool Adapter (`ActionRunner-tools`)                                                | `sccache` Applied? | Why / Operator Impact                                                                                                                                                                                                 |
+| Tool Adapter (`mu-ci-tools` / `ActionRunner-tools`)                                | `sccache` Applied? | Why / Operator Impact                                                                                                                                                                                                 |
 | :--------------------------------------------------------------------------------- | :----------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `cargo-build`, `cargo-check`, `cargo-test`, `cargo-clippy`, `cargo-bench`, `trunk` | **Yes (Eligible)** | Standard Rust and WASM compilation tools; receive `RUSTC_WRAPPER=<sccache_bin>`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `sccache.env`.                                                                  |
 | `cargo-llvm-cov`                                                                   | **No (Stripped)**  | Requires LLVM `-C instrument-coverage` instrumentation; wrapping with `sccache` can corrupt or bypass `.profraw` coverage counters. `StageRunner` explicitly removes `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER`. |
@@ -103,11 +103,12 @@ Understanding `sccache`'s client-daemon architecture explains how ActionRunner p
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Worker Node (systemd: action-runner-worker.service, User=action-runner) │
+│ Worker Node (systemd: mu-ci-worker.service, Slice=mu-ci-isolation.slice)│
+│  (Phase 1 dual-stack fallback: action-runner-worker.service)            │
 │                                                                         │
 │  1. Startup: WorkerConfig::detect_sccache_bin() & load_sccache_env()    │
 │     • Probes ACTION_RUNNER_SCCACHE_BIN, /usr/local/bin/sccache, etc.    │
-│     • Reads /etc/action-runner/sccache.env                              │
+│     • Reads /etc/mu-ci-worker/sccache.env (or /etc/action-runner/)      │
 │     • Strips RUSTC_WRAPPER / CARGO_BUILD_RUSTC_WRAPPER for safety       │
 │     • Appends "sccache" to WorkerRegistration.tags                      │
 │                                                                         │
@@ -117,7 +118,7 @@ Understanding `sccache`'s client-daemon architecture explains how ActionRunner p
 │       auto-runs `--stop-server` + `--show-stats` with S3 env            │
 │     • Single retry (`--stop-server` + `--show-stats`) if socket wedged  │
 │                                                                         │
-│  3. Task Execution (Inside MuIsolation Sandbox)                         │
+│  3. Task Execution (Inside mu-ci-isolation / MuIsolation Sandbox)       │
 │     • Eligible tool (e.g. cargo-clippy) gets RUSTC_WRAPPER=<bin>,       │
 │       CARGO_INCREMENTAL=0, SCCACHE_IDLE_TIMEOUT=0, and sccache.env      │
 │     • Thin `sccache` client connects to local daemon (127.0.0.1:4226)   │
@@ -127,8 +128,8 @@ Understanding `sccache`'s client-daemon architecture explains how ActionRunner p
 
 - **Why the "Local Disk Hijack" Happens (and How ActionRunner Automatically Heals It)**:
   `sccache` uses a background daemon listening on `127.0.0.1:4226`. Whichever process invokes `sccache` *first* spawns that background daemon, and **all environment variables on later `sccache` client commands are ignored as long as that daemon stays running**.
-  If an operator SSHes into a worker when the daemon is stopped and runs `sudo -u action-runner sccache --show-stats` *without* sourcing `/etc/action-runner/sccache.env` first, `sccache` silently spawns a background daemon in **`Local disk` mode**—causing subsequent builds to ignore your S3 bucket!
-  To prevent this mode mismatch, `StageRunner::ensure_sccache_server_healthy` inspects the `Cache location` line of `sccache --show-stats` before every stage. If `SCCACHE_BUCKET` is configured in `/etc/action-runner/sccache.env` but the daemon reports `Cache location: Local disk`, ActionRunner automatically runs `sccache --stop-server` and restarts the daemon with your S3 credentials.
+  If an operator SSHes into a worker when the daemon is stopped and runs `sudo -u mu-ci-worker sccache --show-stats` *without* sourcing `/etc/mu-ci-worker/sccache.env` (Phase 1: `/etc/action-runner/sccache.env`) first, `sccache` silently spawns a background daemon in **`Local disk` mode**—causing subsequent builds to ignore your S3 bucket!
+  To prevent this mode mismatch, `StageRunner::ensure_sccache_server_healthy` inspects the `Cache location` line of `sccache --show-stats` before every stage. If `SCCACHE_BUCKET` is configured in `sccache.env` but the daemon reports `Cache location: Local disk`, ActionRunner automatically runs `sccache --stop-server` and restarts the daemon with your S3 credentials.
 
 ______________________________________________________________________
 
@@ -138,7 +139,7 @@ Follow these steps on each worker node where you want `sccache` acceleration.
 
 ### Step 1: Install the `sccache` Binary to `/usr/local/bin/sccache`
 
-> **Critical Service Account & Sandbox Rule**: Never install `sccache` only inside `/root/.cargo/bin` or a personal `/home/<user>/.cargo/bin` directory. `action-runner` runs under the isolated `action-runner` service account with `ProtectHome=read-only` and `MuIsolation` Landlock rules that restrict execution to `/usr/local/bin`, `/usr/bin`, `/bin`, and `/var/lib/action-runner/.cargo/bin`. Always install `sccache` to **`/usr/local/bin/sccache`** (`0755 root:root`).
+> **Critical Service Account & Sandbox Rule**: Never install `sccache` only inside `/root/.cargo/bin` or a personal `/home/<user>/.cargo/bin` directory. `mu-ci-worker` runs under the isolated service account (`mu-ci-worker`, Phase 1: `action-runner`) with `ProtectHome=read-only` and `MuIsolation` Landlock rules that restrict execution to `/usr/local/bin`, `/usr/bin`, `/bin`, and the service account's `.cargo/bin`. Always install `sccache` to **`/usr/local/bin/sccache`** (`0755 root:root`).
 
 #### Option A: `x86_64` or `aarch64` Linux Worker (Official Prebuilt Binary)
 
@@ -183,31 +184,31 @@ On high-memory `riscv64gc-unknown-linux-gnu` nodes (such as a 32 GB RAM SpacemiT
 # 1. Install build prerequisites (Debian/Ubuntu/Bianbu)
 sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev build-essential
 
-# 2. Compile sccache using the action-runner service account toolchain
-sudo -u action-runner env \
-  RUSTUP_HOME=/var/lib/action-runner/.rustup \
-  CARGO_HOME=/var/lib/action-runner/.cargo \
-  PATH="/var/lib/action-runner/.cargo/bin:/usr/local/bin:/usr/bin:/bin" \
+# 2. Compile sccache using the worker service account toolchain (/var/lib/mu-ci-worker; Phase 1: /var/lib/action-runner)
+sudo -u mu-ci-worker env \
+  RUSTUP_HOME=/var/lib/mu-ci-worker/.rustup \
+  CARGO_HOME=/var/lib/mu-ci-worker/.cargo \
+  PATH="/var/lib/mu-ci-worker/.cargo/bin:/usr/local/bin:/usr/bin:/bin" \
   cargo install sccache --locked
 
 # 3. Install into /usr/local/bin so all sandbox profiles can execute it
-sudo install -m 755 /var/lib/action-runner/.cargo/bin/sccache /usr/local/bin/sccache
+sudo install -m 755 /var/lib/mu-ci-worker/.cargo/bin/sccache /usr/local/bin/sccache
 ```
 
-Verify that the `action-runner` service account can execute the binary:
+Verify that the worker service account can execute the binary:
 
 ```bash
-sudo -u action-runner /usr/local/bin/sccache --version
+sudo -u mu-ci-worker /usr/local/bin/sccache --version
 ```
 
 ______________________________________________________________________
 
-### Step 2: Choose and Configure Your Cache Backend (`/etc/action-runner/sccache.env`)
+### Step 2: Choose and Configure Your Cache Backend (`/etc/mu-ci-worker/sccache.env`)
 
-`WorkerConfig::load_sccache_env()` automatically reads `/etc/action-runner/sccache.env` (or the path set in `ACTION_RUNNER_SCCACHE_ENV_FILE`). First, ensure `/etc/action-runner` is owned and traversable by the `action-runner` service account (`0700 action-runner:action-runner`, **not** `0700 root:root`):
+`WorkerConfig::load_sccache_env()` automatically reads `/etc/mu-ci-worker/sccache.env` (Phase 1 dual-stack fallback: `/etc/action-runner/sccache.env`, or the path set in `ACTION_RUNNER_SCCACHE_ENV_FILE`). First, ensure `/etc/mu-ci-worker` is owned and traversable by the worker service account (`0700 mu-ci-worker:mu-ci-worker`, **not** `0700 root:root`):
 
 ```bash
-sudo install -d -m 700 -o action-runner -g action-runner /etc/action-runner
+sudo install -d -m 700 -o mu-ci-worker -g mu-ci-worker /etc/mu-ci-worker
 ```
 
 Now choose **Backend Option 1 (Local Disk)** or **Backend Option 2 (Shared S3 / Garage / MinIO)**:
@@ -216,21 +217,21 @@ Now choose **Backend Option 1 (Local Disk)** or **Backend Option 2 (Shared S3 / 
 
 Use this option if you have a single worker node per architecture or want each worker to store cached artifacts on its own local NVMe/SSD.
 
-1. Create the cache directory under `/var/lib/action-runner`:
+1. Create the cache directory under `/var/lib/mu-ci-worker`:
    ```bash
-   sudo install -d -m 750 -o action-runner -g action-runner /var/lib/action-runner/.cache/sccache
+   sudo install -d -m 750 -o mu-ci-worker -g mu-ci-worker /var/lib/mu-ci-worker/.cache/sccache
    ```
-1. Write `/etc/action-runner/sccache.env`:
+1. Write `/etc/mu-ci-worker/sccache.env`:
    ```bash
-   sudo tee /etc/action-runner/sccache.env >/dev/null <<'EOF'
+   sudo tee /etc/mu-ci-worker/sccache.env >/dev/null <<'EOF'
    # Local Disk Cache Configuration
-   SCCACHE_DIR=/var/lib/action-runner/.cache/sccache
+   SCCACHE_DIR=/var/lib/mu-ci-worker/.cache/sccache
    SCCACHE_CACHE_SIZE=20G
    SCCACHE_SERVER_PORT=4226
    SCCACHE_IDLE_TIMEOUT=0
    EOF
-   sudo chown action-runner:action-runner /etc/action-runner/sccache.env
-   sudo chmod 600 /etc/action-runner/sccache.env
+   sudo chown mu-ci-worker:mu-ci-worker /etc/mu-ci-worker/sccache.env
+   sudo chmod 600 /etc/mu-ci-worker/sccache.env
    ```
 
 #### Backend Option 2: Multi-Node Shared S3 Cache (Garage / MinIO / AWS S3)
@@ -238,9 +239,9 @@ Use this option if you have a single worker node per architecture or want each w
 Use this option when multiple workers share the same architecture so a crate compiled on one node is immediately available as a cache hit on all other nodes.
 
 1. Create a bucket (for example `sccache`) and a read/write access key on your S3-compatible server (such as [Garage](https://garagehq.deuxfleurs.fr/), MinIO, Ceph RGW, or AWS S3).
-1. Write `/etc/action-runner/sccache.env`:
+1. Write `/etc/mu-ci-worker/sccache.env`:
    ```bash
-   sudo tee /etc/action-runner/sccache.env >/dev/null <<'EOF'
+   sudo tee /etc/mu-ci-worker/sccache.env >/dev/null <<'EOF'
    # Shared S3-Compatible Cache Configuration (Garage / MinIO / AWS S3)
    SCCACHE_BUCKET=sccache
    SCCACHE_REGION=us-east-1
@@ -252,8 +253,8 @@ Use this option when multiple workers share the same architecture so a crate com
    AWS_ACCESS_KEY_ID=GK0123456789abcdef01234567
    AWS_SECRET_ACCESS_KEY=replace-with-your-s3-secret-key
    EOF
-   sudo chown action-runner:action-runner /etc/action-runner/sccache.env
-   sudo chmod 600 /etc/action-runner/sccache.env
+   sudo chown mu-ci-worker:mu-ci-worker /etc/mu-ci-worker/sccache.env
+   sudo chmod 600 /etc/mu-ci-worker/sccache.env
    ```
 
 > **Configuration Notes**:
@@ -264,12 +265,12 @@ Use this option when multiple workers share the same architecture so a crate com
 
 ______________________________________________________________________
 
-### Step 3: Verify `MuIsolation` Sandbox (`.actionrunner/security.yml`) & Systemd Grants
+### Step 3: Verify `MuIsolation` Sandbox (`.muci/security.yml`) & Systemd Grants
 
-1. **Systemd Service (`action-runner-worker.service`)**:
-   Ensure `/var/lib/action-runner` and `/tmp` are writable when `ProtectSystem=strict` is enabled, and `/etc/action-runner` is readable by `User=action-runner`.
-1. **Repository Sandbox Profile (`.actionrunner/security.yml`)**:
-   Ensure `read_paths` includes `/usr` and `exec_paths` includes `/usr/local/bin` and `/usr/bin` so Landlock permits `cargo` to execute `/usr/local/bin/sccache`:
+1. **Systemd Service (`mu-ci-worker.service` in `mu-ci-isolation.slice`)**:
+   Ensure `/var/lib/mu-ci-worker` (or `/var/lib/action-runner` in Phase 1) and `/tmp` are writable when `ProtectSystem=strict` is enabled, and `/etc/mu-ci-worker` (Phase 1 fallback: `/etc/action-runner`) is readable by the service user.
+1. **Repository Sandbox Profile (`.muci/security.yml`, Phase 1 fallback `.actionrunner/security.yml`)**:
+   Ensure `read_paths` includes `/usr` and `exec_paths` includes `/usr/local/bin` and `/usr/bin` so Landlock permits `cargo` to execute `/usr/local/bin/sccache`. Note that during Phase 1 cutover, repository `.muci/security.yml` profiles retain `/var/lib/action-runner` paths so live Phase 1 workers accept the profile against their host ceiling without `SecurityGrantDenied`:
    ```yaml
    default_profile: "default_ci"
    profiles:
@@ -297,12 +298,12 @@ ______________________________________________________________________
 
 ### Step 4: Test the Daemon & Restart the Worker Service
 
-Before restarting the worker service, test starting the `sccache` daemon directly under the `action-runner` user with `/etc/action-runner/sccache.env` loaded:
+Before restarting the worker service, test starting the `sccache` daemon directly under the worker service account with `/etc/mu-ci-worker/sccache.env` loaded:
 
 ```bash
-sudo -u action-runner bash -c '
+sudo -u mu-ci-worker bash -c '
   set -a
-  source /etc/action-runner/sccache.env
+  source /etc/mu-ci-worker/sccache.env
   set +a
   /usr/local/bin/sccache --stop-server >/dev/null 2>&1 || true
   /usr/local/bin/sccache --start-server
@@ -313,14 +314,14 @@ sudo -u action-runner bash -c '
 Inspect the `Cache location` line in the output:
 
 - For **Local Disk**, it must display:
-  `Cache location    Local disk: "/var/lib/action-runner/.cache/sccache"`
+  `Cache location    Local disk: "/var/lib/mu-ci-worker/.cache/sccache"`
 - For **S3 / Garage / MinIO**, it must display:
   `Cache location    S3, bucket: Bucket(name=sccache), key_prefix: v1/`
 
-Now restart the worker daemon so it detects `/usr/local/bin/sccache`, loads `/etc/action-runner/sccache.env`, and advertises `"sccache"` in its registration tags:
+Now restart the worker daemon so it detects `/usr/local/bin/sccache`, loads `/etc/mu-ci-worker/sccache.env`, and advertises `"sccache"` in its registration tags:
 
 ```bash
-sudo systemctl restart action-runner-worker
+sudo systemctl restart mu-ci-worker.service
 ```
 
 ______________________________________________________________________
@@ -356,10 +357,10 @@ Expected output:
 
 ### Check 2: Trigger Build #1 (Cold Cache) and Inspect Live Stats
 
-Trigger a CI run on any Rust repository (`sccache: try` is active by default even when omitted from `.actionrunner/ActionRunner.yml`). Once a compilation stage (`clippy` or `test`) finishes, run the stats check on the worker node:
+Trigger a CI run on any Rust repository (`sccache: try` is active by default even when omitted from `.muci/mu-ci.yml`). Once a compilation stage (`clippy` or `test`) finishes, run the stats check on the worker node:
 
 ```bash
-sudo -u action-runner bash -c 'set -a && source /etc/action-runner/sccache.env && set +a && /usr/local/bin/sccache --show-stats'
+sudo -u mu-ci-worker bash -c 'set -a && source /etc/mu-ci-worker/sccache.env && set +a && /usr/local/bin/sccache --show-stats'
 ```
 
 On **Build #1 (Cold Cache)**, verify that:
@@ -381,11 +382,11 @@ ______________________________________________________________________
 
 ### Q1: Why did `sccache --show-stats` revert to `Local disk` after I checked it manually via SSH?
 
-**Cause**: You ran `sudo -u action-runner sccache --show-stats` when the daemon was stopped, **without** sourcing `/etc/action-runner/sccache.env` first. That command auto-spawned a new background daemon with empty environment variables (defaulting to `Local disk`).
+**Cause**: You ran `sudo -u mu-ci-worker sccache --show-stats` when the daemon was stopped, **without** sourcing `/etc/mu-ci-worker/sccache.env` first. That command auto-spawned a new background daemon with empty environment variables (defaulting to `Local disk`).
 **Fix**: Always inspect stats using:
 
 ```bash
-sudo -u action-runner bash -c 'set -a && source /etc/action-runner/sccache.env && set +a && /usr/local/bin/sccache --show-stats'
+sudo -u mu-ci-worker bash -c 'set -a && source /etc/mu-ci-worker/sccache.env && set +a && /usr/local/bin/sccache --show-stats'
 ```
 
 *(Note: `StageRunner::ensure_sccache_server_healthy` also detects and heals this automatically at the start of the next CI stage.)*
@@ -397,16 +398,16 @@ sudo -u action-runner bash -c 'set -a && source /etc/action-runner/sccache.env &
 
 ### Q3: Why did my stage fail immediately with `exit code 126` (`sccache mandatory policy failed`)?
 
-**Cause**: Your stage is configured with `sccache: mandatory`, and `StageRunner::ensure_sccache_server_healthy` failed to start or verify the `sccache` daemon on the worker (typically due to an unreachable S3 endpoint, invalid S3 credentials, or permission denied on `/etc/action-runner/sccache.env`).
+**Cause**: Your stage is configured with `sccache: mandatory`, and `StageRunner::ensure_sccache_server_healthy` failed to start or verify the `sccache` daemon on the worker (typically due to an unreachable S3 endpoint, invalid S3 credentials, or permission denied on `/etc/mu-ci-worker/sccache.env`).
 **Fix**: Run the Step 4 diagnostic command on the worker with `SCCACHE_LOG=debug` to inspect the exact S3 or filesystem error:
 
 ```bash
-sudo -u action-runner bash -c 'set -a && source /etc/action-runner/sccache.env && set +a && /usr/local/bin/sccache --stop-server ; SCCACHE_LOG=debug /usr/local/bin/sccache --start-server'
+sudo -u mu-ci-worker bash -c 'set -a && source /etc/mu-ci-worker/sccache.env && set +a && /usr/local/bin/sccache --stop-server ; SCCACHE_LOG=debug /usr/local/bin/sccache --start-server'
 ```
 
 ### Q4: Why are cache hit rates `0%` even though `sccache --show-stats` shows `S3`?
 
 **Cause**: Check `Cache write errors` and `Non-cacheable compilations` in `sccache --show-stats`:
 
-- If `Cache write errors > 0`, the access key in `/etc/action-runner/sccache.env` lacks write permission to the bucket or the bucket quota is full.
-- If `Cache hits` is `0` across two different worker nodes of the same architecture, verify both workers have the exact same Rust toolchain version (`sudo -u action-runner rustup show`) and identical `ACTION_RUNNER_WORKSPACE` paths.
+- If `Cache write errors > 0`, the access key in `/etc/mu-ci-worker/sccache.env` lacks write permission to the bucket or the bucket quota is full.
+- If `Cache hits` is `0` across two different worker nodes of the same architecture, verify both workers have the exact same Rust toolchain version (`sudo -u mu-ci-worker rustup show`) and identical `ACTION_RUNNER_WORKSPACE` paths.

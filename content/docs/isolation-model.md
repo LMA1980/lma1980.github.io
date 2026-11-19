@@ -17,7 +17,7 @@ Workloads running on compute clusters range from trusted build scripts to arbitr
 flowchart TD
     subgraph Layers["3-Layer Privilege Attenuation Engine"]
         L1["Layer 1: Host Ceiling (/etc/mu-isolation/ceiling.yml)"]
-        L2["Layer 2: Repository Desired Profile (.actionrunner/security.yml)"]
+        L2["Layer 2: Repository Desired Profile (.muci/security.yml)"]
         L3["Layer 3: Task Constraints (SandboxConstraintSpec)"]
         RESOLVE["Monotonic Attenuation Engine: Effective = Ceiling ∩ Desired ∩ Task"]
         L1 --> RESOLVE
@@ -46,10 +46,10 @@ Privilege configuration flows through three strictly ordered evaluation layers:
 
 - **Layer 1 — Operator Host Ceiling (`/etc/mu-isolation/ceiling.yml`)**:
   Owned and signed exclusively by cluster administrators. Configured locally on physical worker nodes (`0700 root:root`). Sets the absolute maximum resource, filesystem, and network grants that any process on this host may ever obtain.
-- **Layer 2 — Repository Desired Profile (`.actionrunner/security.yml`)**:
+- **Layer 2 — Repository Desired Profile (`.muci/security.yml`, Phase 1 fallback: `.actionrunner/security.yml`)**:
   Committed within each project's repository. Maintainers declare named security profiles (e.g. `strict`, `standard`, `hardware-vector`) detailing expected capabilities for compilation, testing, and benchmarking.
 - **Layer 3 — Per-Task Runtime Constraints (`SandboxConstraintSpec`)**:
-  Specified in `.actionrunner/ActionRunner.yml` for individual tasks, optionally narrowing CPU quotas, memory ceilings, or network access for a single command.
+  Specified in `.muci/mu-ci.yml` (Phase 1 fallback: `.actionrunner/ActionRunner.yml`) for individual tasks, optionally narrowing CPU quotas, memory ceilings, or network access for a single command.
 
 ### Monotonic Intersection Invariant
 
@@ -107,7 +107,7 @@ The `KernelSandbox` is designed for near-zero startup overhead (less than 2 ms) 
 
 #### 3. Resource Accounting via `cgroupv2`
 
-- Tasks run inside isolated cgroups under `/sys/fs/cgroup/mu-isolation/`.
+- Tasks run inside isolated cgroups under `/sys/fs/cgroup/mu-ci-isolation.slice/` (Phase 1 fallback: `/sys/fs/cgroup/mu-isolation/`).
 - Hard resource caps:
   - `cpu.max`: Quota and period bounding CPU core utilization.
   - `memory.max`: Hard memory limit triggering immediate OOM kills if breached.
@@ -182,7 +182,9 @@ filesystem:
     - "/root"
 ```
 
-### Repository Desired Profile: `.actionrunner/security.yml`
+### Repository Desired Profile: `.muci/security.yml`
+
+*(Phase 1 ceiling safety: during Phase 1 cutover, `.muci/security.yml` retains `/var/lib/action-runner` paths alongside `/var/lib/mu-ci-worker` host mounts so live Phase 1 CI workers do not reject the profile with `SecurityGrantDenied`.)*
 
 ```yaml
 version: "1"
@@ -237,8 +239,8 @@ profiles:
 
 ### 4.1 Distributed Compiler Cache (`sccache`) & Credential Isolation
 
-When `sccache` is enabled (`sccache: "try"` or `sccache: "mandatory"` in `.actionrunner/ActionRunner.yml`), `MuIsolation` and `ActionRunner-rs` enforce strict boundary separation between untrusted repository manifests and host S3/cache credentials:
+When `sccache` is enabled (`sccache: "try"` or `sccache: "mandatory"` in `.muci/mu-ci.yml`), `mu-ci-isolation` (`MuIsolation`) and `mu-ci-worker` enforce strict boundary separation between untrusted repository manifests and host S3/cache credentials:
 
 1. **Landlock Binary Paths**: Both `/usr/local/bin` and `/usr/bin` must be included in `read_paths` and `exec_paths` so `cargo` and `rustc` subprocesses can invoke `RUSTC_WRAPPER=sccache`.
-1. **Host-Side Credential Provisioning (`/etc/action-runner/sccache.env`)**: S3/Garage/MinIO credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SCCACHE_BUCKET`, `SCCACHE_ENDPOINT`) live exclusively on the worker host in `/etc/action-runner/sccache.env` (`0600`, `action-runner:action-runner`), never in repository manifests.
-1. **Wrapper Override Filtering**: `WorkerConfig::load_sccache_env()` strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` when reading `/etc/action-runner/sccache.env` so wrapper injection cannot be forced onto non-compilation tools (`cargo-llvm-cov`, `cargo-audit`, `cargo-fmt`, `cargo-miri`).
+1. **Host-Side Credential Provisioning (`/etc/mu-ci-worker/sccache.env`)**: S3/Garage/MinIO credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SCCACHE_BUCKET`, `SCCACHE_ENDPOINT`) live exclusively on the worker host in `/etc/mu-ci-worker/sccache.env` (Phase 1 fallback: `/etc/action-runner/sccache.env`, `0600`), never in repository manifests.
+1. **Wrapper Override Filtering**: `WorkerConfig::load_sccache_env()` strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` when reading `sccache.env` so wrapper injection cannot be forced onto non-compilation tools (`cargo-llvm-cov`, `cargo-audit`, `cargo-fmt`, `cargo-miri`).

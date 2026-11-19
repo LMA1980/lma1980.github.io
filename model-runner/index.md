@@ -16,7 +16,7 @@ Actionable walkthroughs for model ingestion, standalone benchmarking, and connec
 
 ### 2. Operator Runbooks
 Technical documentation for systems engineers and platform administrators managing production RISC-V deployments.
-- [**Deployment & Maintenance Guide**](deployment.md) — Production architecture: systemd service isolation (`k3.slice`, `k3-kv`, `model-runner`), Linux cgroup v2 top-down delegation, conditional `/proc/set_ai_thread` registration, bounded 28 GiB `RLIMIT_MEMLOCK` ceiling, DuckDB catalog schema, and scheduled dual-gate garbage collection.
+- [**Deployment & Maintenance Guide**](deployment.md) — Production architecture: systemd service isolation (`jero-runner.slice`, `jero-kv-cache.service`, `jero-runner.service`, `jero-manager.service`, `jero-engine.service`, `jero-manager-gc.{service,timer}`, `jero-manager-ext@.service`), Linux cgroup v2 top-down delegation, conditional `/proc/set_ai_thread` registration, bounded 28 GiB `RLIMIT_MEMLOCK` ceiling, DuckDB catalog schema, and scheduled dual-gate garbage collection.
 - [**Troubleshooting Guide**](troubleshooting.md) — Diagnostic procedures and incident runbooks for `K3Error` variants (`InsufficientLockableMemory`, `CapabilityMismatch`, `ContextLengthExceeded`, `QueueSaturated`), stale derived weight recovery, lock inspection with `k3-store who-uses`, and watchdog preemption.
 - [**Hardware Tuning & Sizing Guide**](tuning.md) — Hardware-specific microarchitectural tuning for SpacemiT K3: Cluster 0 (`X100`, cores 0–7) vs Cluster 1 (`A100`, cores 8–15), core partition masks, KV cache arena sizing tables, admission queue depth, and dynamic idle core spillover.
 

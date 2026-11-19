@@ -9,18 +9,18 @@ This guide provides diagnostic procedures and resolution runbooks for operationa
 When an incident occurs, run the following triage commands:
 
 ```bash
-# 1. Check system service status
-systemctl status k3-kv.service model-runner.service
+# 1. Check system service status (Phase 1 dual-stack fallback: k3-kv.service, model-runner.service)
+systemctl status jero-kv-cache.service jero-manager.service jero-runner.service jero-engine.service
 
 # 2. Inspect active journal logs
-journalctl -u model-runner.service -n 100 --no-pager
+journalctl -u jero-runner.service -u jero-manager.service -n 100 --no-pager
 
 # 3. Inspect locked memory and available RAM
 cat /proc/meminfo | grep -E "MemTotal|MemAvailable|Mlocked"
 
 # 4. Check active cgroup placement
-cat /sys/fs/cgroup/k3.slice/control/cgroup.procs
-cat /sys/fs/cgroup/k3.slice/control/cpuset.cpus
+cat /sys/fs/cgroup/jero-runner.slice/control/cgroup.procs
+cat /sys/fs/cgroup/jero-runner.slice/control/cpuset.cpus
 
 # 5. List registered blobs and active reference counts
 k3-store list blobs
@@ -159,11 +159,11 @@ Model-Runner isolates the health watchdog on a dedicated spare recovery core (co
 
 ### Checking Recovery Audit Logs:
 ```bash
-journalctl -u model-runner.service -g "HealthSupervisor"
+journalctl -u jero-runner.service -g "HealthSupervisor"
 # Example log:
 # [HealthSupervisor] Worker 'qwen2.5-7b' (pid 14205) unresponsive after 30002 ms.
 # [HealthSupervisor] Terminated pid 14205 via SIGKILL. Reaped exit code.
-# [HealthSupervisor] Spawned replacement worker (pid 14312, gen 2) re-attached to k3-kv arena. Resuming generation.
+# [HealthSupervisor] Spawned replacement worker (pid 14312, gen 2) re-attached to jero-kv-cache arena. Resuming generation.
 ```
 
 ---
@@ -179,7 +179,7 @@ k3-store who-uses 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a
 ### Sample Output:
 ```
 Blob: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
-Path: /var/lib/k3/blobs/sha256/9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+Path: /var/lib/jero-manager/blobs/sha256/9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
 Size: 4325601280 bytes
 References: 1 active (["huggingface/Qwen/Qwen2.5-7B/latest"])
 Gate 1 (flock): SHARED LOCK HELD (active worker)

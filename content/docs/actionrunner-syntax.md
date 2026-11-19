@@ -1,6 +1,6 @@
-# Declarative .actionrunner/ActionRunner.yml Syntax Reference
+# Declarative `.muci/mu-ci.yml` (`ActionRunner.yml`) Syntax Reference
 
-This guide provides the complete specification for the declarative **Version 3** configuration schema (`.actionrunner/ActionRunner.yml`) utilized by the ActionRunner continuous integration and verification engine.
+This guide provides the complete specification for the declarative **Version 3** configuration schema (`.muci/mu-ci.yml`, Phase 1 dual-stack fallback `.actionrunner/ActionRunner.yml`) utilized by the **Mu-CI** (`ActionRunner`) continuous integration and verification engine.
 
 ______________________________________________________________________
 
@@ -37,7 +37,7 @@ ______________________________________________________________________
 
 ## 2. Top-Level Specification
 
-A valid `.actionrunner/ActionRunner.yml` document must contain the following top-level keys:
+A valid `.muci/mu-ci.yml` (or Phase 1 `.actionrunner/ActionRunner.yml`) document must contain the following top-level keys:
 
 ```yaml
 version: "3"
@@ -86,19 +86,19 @@ tasks:
     sandbox_profile: "strict"
 ```
 
-| Field             | Type    | Required | Description                                                                           |
-| :---------------- | :------ | :------- | :------------------------------------------------------------------------------------ |
-| `tool`            | string  | **Yes**  | Tool identifier registered in the compile-time `ToolAdapter` registry.                |
-| `args`            | list    | No       | Explicit list of string arguments passed directly to the binary. Defaults to `[]`.    |
-| `working_dir`     | string  | No       | Relative directory within the repository workspace. Defaults to repository root.      |
-| `sccache`         | string  | No       | Task-level override for compilation cache policy (`"try"`, `"mandatory"`, `"false"`). |
-| `env`             | map     | No       | Task-specific environment variable overrides.                                         |
-| `timeout_seconds` | integer | No       | Maximum execution duration before SIGTERM/SIGKILL. Defaults to `600`.                 |
-| `sandbox_profile` | string  | No       | Name of the desired sandbox profile matching `.actionrunner/security.yml`.            |
+| Field             | Type    | Required | Description                                                                                                         |
+| :---------------- | :------ | :------- | :------------------------------------------------------------------------------------------------------------------ |
+| `tool`            | string  | **Yes**  | Tool identifier registered in the compile-time `ToolAdapter` registry.                                              |
+| `args`            | list    | No       | Explicit list of string arguments passed directly to the binary. Defaults to `[]`.                                  |
+| `working_dir`     | string  | No       | Relative directory within the repository workspace. Defaults to repository root.                                    |
+| `sccache`         | string  | No       | Task-level override for compilation cache policy (`"try"`, `"mandatory"`, `"false"`).                               |
+| `env`             | map     | No       | Task-specific environment variable overrides.                                                                       |
+| `timeout_seconds` | integer | No       | Maximum execution duration before SIGTERM/SIGKILL. Defaults to `600`.                                               |
+| `sandbox_profile` | string  | No       | Name of the desired sandbox profile matching `.muci/security.yml` (Phase 1 fallback: `.actionrunner/security.yml`). |
 
 ### Compile-Time `ToolAdapter` Registry
 
-ActionRunner invokes commands through a typed Rust `ToolAdapter` registry (`ActionRunner-tools`). Supported tools include:
+`mu-ci` invokes commands through a typed Rust `ToolAdapter` registry (`mu-ci-tools` / `ActionRunner-tools`). Supported tools include:
 
 - `cargo-fmt`: Invokes `cargo fmt` with formatting verification (`--check`).
 - `cargo-clippy`: Invokes `cargo clippy` with workspace linting flags (`sccache`-eligible).
@@ -222,11 +222,11 @@ ActionRunner supports first-class distributed Rust compilation caching via [`scc
 
 The top-level workflow, individual stages in `stages:`, and individual tasks in `tasks:` each accept an optional `sccache` policy (`"try"`, `"mandatory"`, or `"false"`). Each task resolves its effective policy via `tasks.<id>.sccache -> stages[i].sccache -> workflow.sccache -> "try"` (defaulting to `"try"`):
 
-| Policy                | Accepted YAML Literals                | Controller Scheduling (`effective_stage_tags`)                                                                 | Worker Behavior (`sccache` Installed & Healthy)                                                                              | Worker Behavior (`sccache` Missing or Daemon Unhealthy)                     |
-| :-------------------- | :------------------------------------ | :------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| **`try`** *(default)* | `try`, `true`, `auto`, `yes`, `1`     | Normal stage `tags` only (schedules onto any matching worker)                                                  | Exports `RUSTC_WRAPPER=<sccache_bin>`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Logs a `[WARN]` line and falls back cleanly to uncached `cargo` compilation |
-| **`mandatory`**       | `mandatory`, `required`, `strict`     | Automatically appends `"sccache"` to required stage capability tags (only routes to `sccache`-capable workers) | Exports `RUSTC_WRAPPER=<sccache_bin>`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/action-runner/sccache.env` | Fails closed immediately (`exit 126`) before spawning compilation           |
-| **`false`**           | `false`, `off`, `disabled`, `no`, `0` | Normal stage `tags` only                                                                                       | Strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER`                                                                       | Normal uncached execution                                                   |
+| Policy                | Accepted YAML Literals                | Controller Scheduling (`effective_stage_tags`)                                                                 | Worker Behavior (`sccache` Installed & Healthy)                                                                             | Worker Behavior (`sccache` Missing or Daemon Unhealthy)                     |
+| :-------------------- | :------------------------------------ | :------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
+| **`try`** *(default)* | `try`, `true`, `auto`, `yes`, `1`     | Normal stage `tags` only (schedules onto any matching worker)                                                  | Exports `RUSTC_WRAPPER=<sccache_bin>`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/mu-ci-worker/sccache.env` | Logs a `[WARN]` line and falls back cleanly to uncached `cargo` compilation |
+| **`mandatory`**       | `mandatory`, `required`, `strict`     | Automatically appends `"sccache"` to required stage capability tags (only routes to `sccache`-capable workers) | Exports `RUSTC_WRAPPER=<sccache_bin>`, `CARGO_INCREMENTAL=0`, `SCCACHE_IDLE_TIMEOUT=0`, and `/etc/mu-ci-worker/sccache.env` | Fails closed immediately (`exit 126`) before spawning compilation           |
+| **`false`**           | `false`, `off`, `disabled`, `no`, `0` | Normal stage `tags` only                                                                                       | Strips `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER`                                                                      | Normal uncached execution                                                   |
 
 ### 6.2 Eligible vs. Excluded Tools & Mixed-Policy Stages
 
@@ -239,11 +239,11 @@ When a stage chains multiple tasks with mixed policies (for example, an uncached
 
 ### 6.3 Pre-Stage Daemon Health Check & S3 Hijack Auto-Recovery
 
-Before executing a stage whose resolved mode is `try` or `mandatory`, `StageRunner::ensure_sccache_server_healthy` runs a bounded (5-second timeout) `sccache --show-stats` probe with `/etc/action-runner/sccache.env` applied:
+Before executing a stage whose resolved mode is `try` or `mandatory`, `StageRunner::ensure_sccache_server_healthy` runs a bounded (5-second timeout) `sccache --show-stats` probe with `/etc/mu-ci-worker/sccache.env` (Phase 1 fallback: `/etc/action-runner/sccache.env`) applied:
 
-1. **S3 vs. Local Disk Hijack Recovery**: Because `sccache` spawns a background local daemon on first invocation and ignores environment variables on subsequent client calls while that daemon remains alive, an interactive shell or unconfigured process could accidentally start the local daemon in `Local disk` mode even when `/etc/action-runner/sccache.env` configures `SCCACHE_BUCKET` (S3/Garage/MinIO). If `StageRunner` detects `"Cache location"` reporting `"Local disk"` while `SCCACHE_BUCKET` is non-empty, it automatically executes `sccache --stop-server` followed by `sccache --start-server` with `/etc/action-runner/sccache.env` injected.
+1. **S3 vs. Local Disk Hijack Recovery**: Because `sccache` spawns a background local daemon on first invocation and ignores environment variables on subsequent client calls while that daemon remains alive, an interactive shell or unconfigured process could accidentally start the local daemon in `Local disk` mode even when `/etc/mu-ci-worker/sccache.env` configures `SCCACHE_BUCKET` (S3/Garage/MinIO). If `StageRunner` detects `"Cache location"` reporting `"Local disk"` while `SCCACHE_BUCKET` is non-empty, it automatically executes `sccache --stop-server` followed by `sccache --start-server` with `sccache.env` injected.
 1. **Wedged Socket Recovery**: If `sccache --show-stats` fails or times out, `StageRunner` performs a single bounded `--stop-server` + `--start-server` recovery attempt and re-verifies `--show-stats`.
-1. **Anti-Race Idle Timeout (`SCCACHE_IDLE_TIMEOUT=0`)**: Unless overridden in `/etc/action-runner/sccache.env`, `StageRunner::compute_sccache_env` defaults `SCCACHE_IDLE_TIMEOUT=0` so the local `sccache` server never shuts down mid-build during long linking phases (`sccache` default is 600s).
+1. **Anti-Race Idle Timeout (`SCCACHE_IDLE_TIMEOUT=0`)**: Unless overridden in `sccache.env`, `StageRunner::compute_sccache_env` defaults `SCCACHE_IDLE_TIMEOUT=0` so the local `sccache` server never shuts down mid-build during long linking phases (`sccache` default is 600s).
 
 ### 6.4 Step-by-Step Operator Setup
 
@@ -251,22 +251,22 @@ Enable `sccache` on each worker node by completing the following steps:
 
 #### Step 1: Install `sccache` on the Worker Node
 
-Install the `sccache` binary into a system-wide executable path accessible to the `action-runner` service account (`/usr/local/bin/sccache` or `/usr/bin/sccache`):
+Install the `sccache` binary into a system-wide executable path accessible to the `mu-ci-worker` service account (`/usr/local/bin/sccache` or `/usr/bin/sccache`):
 
 ```bash
 sudo install -m 755 sccache /usr/local/bin/sccache
-sudo -u action-runner /usr/local/bin/sccache --version
+sudo -u mu-ci-worker /usr/local/bin/sccache --version
 ```
 
-On startup, `action-runner` probes `PATH` (`which sccache`). When found, it automatically advertises `"sccache"` in `NodeCapabilities.supported_tools` (verifiable via `GET /api/cluster/nodes` on the controller).
+On startup, `mu-ci-worker.service` probes `PATH` (`which sccache`). When found, it automatically advertises `"sccache"` in `NodeCapabilities.supported_tools` (verifiable via `GET /api/cluster/nodes` on `mu-ci-controller.service`).
 
-#### Step 2: Provision `/etc/action-runner/sccache.env`
+#### Step 2: Provision `/etc/mu-ci-worker/sccache.env`
 
-Create `/etc/action-runner/sccache.env` owned by `action-runner:action-runner` (`chmod 0600`) to configure either an S3-compatible object store (Garage, MinIO, AWS S3) or a bounded local disk cache:
+Create `/etc/mu-ci-worker/sccache.env` (Phase 1 fallback: `/etc/action-runner/sccache.env`) owned by `mu-ci-worker:mu-ci-worker` (`chmod 0600`) to configure either an S3-compatible object store (Garage, MinIO, AWS S3) or a bounded local disk cache:
 
 ```bash
-sudo install -d -m 700 -o action-runner -g action-runner /etc/action-runner
-sudo tee /etc/action-runner/sccache.env >/dev/null <<'EOF'
+sudo install -d -m 700 -o mu-ci-worker -g mu-ci-worker /etc/mu-ci-worker
+sudo tee /etc/mu-ci-worker/sccache.env >/dev/null <<'EOF'
 # Option A: Shared S3-compatible object storage (Garage / MinIO / AWS S3)
 SCCACHE_BUCKET=ci-sccache
 SCCACHE_ENDPOINT=http://192.0.2.10:3900
@@ -279,74 +279,74 @@ SCCACHE_SERVER_PORT=4226
 SCCACHE_IDLE_TIMEOUT=0
 
 # Option B: Local disk cache (if not using S3, comment out Option A and uncomment below)
-# SCCACHE_DIR=/var/lib/action-runner/.cache/sccache
+# SCCACHE_DIR=/var/lib/mu-ci-worker/.cache/sccache
 # SCCACHE_CACHE_SIZE=20G
 # SCCACHE_IDLE_TIMEOUT=0
 EOF
-sudo chown action-runner:action-runner /etc/action-runner/sccache.env
-sudo chmod 600 /etc/action-runner/sccache.env
+sudo chown mu-ci-worker:mu-ci-worker /etc/mu-ci-worker/sccache.env
+sudo chmod 600 /etc/mu-ci-worker/sccache.env
 ```
 
-> **Security Invariant**: `WorkerConfig::load_sccache_env()` automatically filters `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` out of `/etc/action-runner/sccache.env` so wrapper injection remains strictly governed per task by `StageRunner::compute_sccache_env()`.
+> **Security Invariant**: `WorkerConfig::load_sccache_env()` automatically filters `RUSTC_WRAPPER` and `CARGO_BUILD_RUSTC_WRAPPER` out of `/etc/mu-ci-worker/sccache.env` so wrapper injection remains strictly governed per task by `StageRunner::compute_sccache_env()`.
 
 #### Step 3: Verify `MuIsolation` Sandbox & Systemd Paths
 
-Ensure every repository's `.actionrunner/security.yml` and host ceiling (`/etc/mu-isolation/ceiling.yml`) include `/usr/local/bin` and `/usr/bin` in `read_paths` and `exec_paths`. Verify under the `action-runner` service account and restart the worker daemon:
+Ensure every repository's `.muci/security.yml` (Phase 1 fallback: `.actionrunner/security.yml`) and host ceiling (`/etc/mu-isolation/ceiling.yml`) include `/usr/local/bin` and `/usr/bin` in `read_paths` and `exec_paths`. Verify under the worker service account and restart `mu-ci-worker.service`:
 
 ```bash
-sudo -u action-runner sh -a -c '. /etc/action-runner/sccache.env && sccache --stop-server >/dev/null 2>&1 || true && sccache --start-server && sccache --show-stats'
-sudo systemctl restart action-runner
+sudo -u mu-ci-worker sh -a -c '. /etc/mu-ci-worker/sccache.env && sccache --stop-server >/dev/null 2>&1 || true && sccache --start-server && sccache --show-stats'
+sudo systemctl restart mu-ci-worker.service
 ```
 
 #### Step 4: Operator Troubleshooting Checklist
 
-- **Hit rate stays `0%` across multi-node builds**: Run `sudo -u action-runner sccache --show-stats` on each worker and check `Cache location`. If it shows `Local disk` instead of `S3`, verify `SCCACHE_BUCKET` and `AWS_*` credentials in `/etc/action-runner/sccache.env`.
+- **Hit rate stays `0%` across multi-node builds**: Run `sudo -u mu-ci-worker sccache --show-stats` on each worker and check `Cache location`. If it shows `Local disk` instead of `S3`, verify `SCCACHE_BUCKET` and `AWS_*` credentials in `/etc/mu-ci-worker/sccache.env`.
 - **Stage with `sccache: "mandatory"` remains `Queued`**: Query `GET /api/cluster/nodes` on the controller and verify at least one online worker matching the stage's architecture/custom `tags` also lists `"sccache"` in `supported_tools`.
-- **Stage fails with `exit 126` (`sccache mandatory policy failed`)**: Inspect the `[ERROR]` line in the stage log; `sccache --show-stats` failed (e.g. unreachable S3 endpoint or invalid credentials in `/etc/action-runner/sccache.env`).
+- **Stage fails with `exit 126` (`sccache mandatory policy failed`)**: Inspect the `[ERROR]` line in the stage log; `sccache --show-stats` failed (e.g. unreachable S3 endpoint or invalid credentials in `/etc/mu-ci-worker/sccache.env`).
 
 ______________________________________________________________________
 
 ## 7. Three-Phase Configuration Migration
 
-To safely transition production repositories from legacy `.actionrunner/on-*.yml` files without downtime, teams follow a strict 3-phase rollout:
+To safely transition production repositories from legacy `.actionrunner/on-*.yml` and `.actionrunner/ActionRunner.yml` files to `.muci/mu-ci.yml` without downtime, teams follow a strict 3-phase rollout:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Phase 1: Dual-Stack Fallback                                           │
-│ ActionRunner.yml takes precedence. If absent, fallback to on-*.yml.    │
-│ Logs: legacy_workflow_loaded. Metric: actionrunner_legacy_workflow_... │
+│ .muci/mu-ci.yml takes precedence (with .actionrunner/ActionRunner.yml  │
+│ & on-*.yml fallback). Security profiles keep /var/lib/action-runner.   │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ Production cutover verified
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Phase 2: Production Verification & Legacy Disable                      │
-│ Set ACTIONRUNNER_DISABLE_LEGACY=1 on controllers.                      │
+│ Set ACTIONRUNNER_DISABLE_LEGACY=1 on mu-ci-controller.service.         │
 │ Legacy on-*.yml files are strictly rejected with ConfigurationError.   │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ Repository cleanup
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Phase 3: Post-Deployment Legacy Removal                                │
-│ Delete obsolete on-*.yml files from repositories.                      │
+│ Delete obsolete .actionrunner/ files from repositories.                │
 │ Remove legacy fallback parsers from daemon source code.                │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 1. **Phase 1: Side-by-Side Dual-Stack Fallback**:
-   - The daemon checks for `.actionrunner/ActionRunner.yml`. If found, it parses and executes the Tier 3 pipeline.
+   - `mu-ci-controller.service` checks for `.muci/mu-ci.yml` (falling back to `.actionrunner/ActionRunner.yml`). If found, it parses and executes the Tier 3 pipeline.
    - If missing, the controller emits a structured warning (`legacy_workflow_loaded`) and increments the Prometheus counter `actionrunner_legacy_workflow_loads_total{repository="..."}` while falling back to legacy `on-*.yml`.
 1. **Phase 2: Production Cutover**:
-   - All services deploy `.actionrunner/ActionRunner.yml`.
+   - All services deploy `.muci/mu-ci.yml` and `.muci/security.yml`.
    - Controllers enable `ACTIONRUNNER_DISABLE_LEGACY=1`. Attempts to run legacy workflows fail closed with an admission rejection.
 1. **Phase 3: Clean-Up & Retirement**:
-   - Legacy files (`.actionrunner/on-push.yml`, `.actionrunner/on-pullrequest.yml`, `.actionrunner/on-merge.yml`) are removed from repositories.
-   - Legacy parser code is permanently pruned from the `ActionRunner-controller` codebase.
+   - Legacy files (`.actionrunner/on-push.yml`, `.actionrunner/on-pullrequest.yml`, `.actionrunner/on-merge.yml`, and eventually `.actionrunner/`) are removed from repositories.
+   - Legacy parser code is permanently pruned from the `mu-ci-controller` codebase.
 
 ______________________________________________________________________
 
 ## 8. Annotated Example
 
-Below is a complete, production-grade `.actionrunner/ActionRunner.yml` pipeline:
+Below is a complete, production-grade `.muci/mu-ci.yml` pipeline:
 
 ```yaml
 version: "3"

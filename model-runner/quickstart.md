@@ -22,12 +22,12 @@ This guide walks you through setting up, ingesting models into, and querying the
 - Linux OS with RISC-V 64-bit support (or macOS/Linux x86_64 for development/mock mode).
 - Storage directories created:
   ```bash
-  sudo mkdir -p /var/lib/k3/{blobs/sha256,manifests/sha256,models,staging,derived}
-  sudo chown -R $USER:$USER /var/lib/k3
+  sudo mkdir -p /var/lib/jero-manager/{blobs/sha256,manifests/sha256,models,staging,derived}
+  sudo chown -R $USER:$USER /var/lib/jero-manager
   ```
-- Environment variable (optional, defaults to `/var/lib/k3`):
+- Environment variable (optional, defaults to `/var/lib/jero-manager`; Phase 1 fallback `/var/lib/k3`):
   ```bash
-  export K3_STORE_ROOT="/var/lib/k3"
+  export K3_STORE_ROOT="/var/lib/jero-manager"
   ```
 
 ---
@@ -47,20 +47,20 @@ Model Runner supports universal ingestion across major formats and sources, dedu
 ### Ingestion Methods
 
 #### A. Ingesting from Hugging Face Hub
-Configure credentials via protected secret file (`/etc/k3/credentials/hf.env`, permissions `0600`):
+Configure credentials via protected secret file (`/etc/jero-runner/credentials/hf.env`, permissions `0600`):
 ```bash
-echo "HF_TOKEN=hf_your_huggingface_token" | sudo tee /etc/k3/credentials/hf.env
-sudo chmod 0600 /etc/k3/credentials/hf.env
+echo "HF_TOKEN=hf_your_huggingface_token" | sudo tee /etc/jero-runner/credentials/hf.env
+sudo chmod 0600 /etc/jero-runner/credentials/hf.env
 ```
 
-Model acquisition is handled by the isolated source adapter pipeline in `k3-manager` (supporting Hugging Face, Ollama, and local file adapters).
+Model acquisition is handled by the isolated source adapter pipeline in `k3-manager` (`jero-manager.service` / `jero-manager-ext@.service`, supporting Hugging Face, Ollama, and local file adapters).
 
 *How it works*:
-1. The isolated source adapter streams incoming bytes to `/var/lib/k3/staging/staging_<uuid>.part`.
+1. The isolated source adapter streams incoming bytes to `/var/lib/jero-manager/staging/staging_<uuid>.part`.
 2. Simultaneously calculates cryptographic SHA-256 digest on the fly.
 3. Verifies format headers (GGUF magic `0x46554747` or SafeTensors JSON header).
-4. Atomically promotes (`rename()`) the verified artifact into `/var/lib/k3/blobs/sha256/<digest>`.
-5. Registers the manifest in DuckDB (`catalog.duckdb`) and creates a human-browsable alias symlink in `/var/lib/k3/models/huggingface/Qwen/Qwen2.5-7B-Instruct/latest`.
+4. Atomically promotes (`rename()`) the verified artifact into `/var/lib/jero-manager/blobs/sha256/<digest>`.
+5. Registers the manifest in DuckDB (`catalog.duckdb`) and creates a human-browsable alias symlink in `/var/lib/jero-manager/models/huggingface/Qwen/Qwen2.5-7B-Instruct/latest`.
 
 #### B. Inspecting and Listing Store Assets (`k3-store`)
 The `k3-store` administrative CLI provides verification and inspection across store assets:
@@ -97,8 +97,8 @@ k3-store inspect local/qwen/qwen2.5-7b/q4km
 Example Output:
 ```text
 Alias:         local/qwen/qwen2.5-7b/q4km
-Manifest Path: /var/lib/k3/manifests/sha256/a8c2f10d...json
-Weight Path:   /var/lib/k3/blobs/sha256/b7e9411c...bin
+Manifest Path: /var/lib/jero-manager/manifests/sha256/a8c2f10d...json
+Weight Path:   /var/lib/jero-manager/blobs/sha256/b7e9411c...bin
 Format:        gguf
 Architecture:  qwen2
 Recipe:        1.0.0
@@ -127,7 +127,7 @@ Before launching background daemons, verify hardware acceleration, memory lockin
 ### A. Single-Prompt Standalone Streaming Evaluation
 ```bash
 k3-diag \
-  --model /var/lib/k3/blobs/sha256/b7e9411c...bin \
+  --model /var/lib/jero-manager/blobs/sha256/b7e9411c...bin \
   --prompt "Explain RISC-V RVV 1.0 vector extensions in 2 sentences." \
   --cluster x100 \
   --threads 6 \
@@ -140,7 +140,7 @@ k3-diag \
 Verify timing consistency and token determinism across repeated iterations ($N \ge 3$):
 ```bash
 k3-diag \
-  --model /var/lib/k3/blobs/sha256/b7e9411c...bin \
+  --model /var/lib/jero-manager/blobs/sha256/b7e9411c...bin \
   --prompt "Sanity check determinism" \
   --coord spin \
   --repeat 5 \
@@ -154,7 +154,7 @@ k3-diag \
 Benchmark Cluster 1 (`A100`) IME matrix cores vs Cluster 0 (`X100`):
 ```bash
 k3-diag \
-  --model /var/lib/k3/blobs/sha256/b7e9411c...bin \
+  --model /var/lib/jero-manager/blobs/sha256/b7e9411c...bin \
   --cluster both \
   --split phase \
   --ime on \
@@ -165,25 +165,25 @@ k3-diag \
 Export a machine-readable performance profile for the scheduler:
 ```bash
 k3-diag \
-  --model /var/lib/k3/blobs/sha256/b7e9411c...bin \
-  --export-profile /etc/k3/profiles/qwen2.5-7b.json
+  --model /var/lib/jero-manager/blobs/sha256/b7e9411c...bin \
+  --export-profile /etc/jero-runner/profiles/qwen2.5-7b.json
 ```
 
 ---
 
 ## 5. Starting the System Services
 
-Start the context holder and control plane manager services:
+Start the context holder and control plane manager services (Phase 1 dual-stack fallback aliases: `k3-kv.service` and `model-runner.service`):
 
 ```bash
 # Start the policy-free context memory holder
-sudo systemctl start k3-kv.service
+sudo systemctl start jero-kv-cache.service
 
-# Start the Model Runner daemon service
-sudo systemctl start model-runner.service
+# Start the Jero-Runner daemon services
+sudo systemctl start jero-manager.service jero-runner.service
 
 # Verify service status
-sudo systemctl status model-runner.service
+sudo systemctl status jero-kv-cache.service jero-manager.service jero-runner.service
 ```
 
 Verify that the local endpoints are responsive:

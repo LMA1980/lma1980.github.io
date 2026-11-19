@@ -169,8 +169,8 @@ pub struct CollectorSandboxConfig {
 
 ### 6.1 Landlock Filesystem Attenuation
 
-- **Read-Write Access**: Strictly restricted to `/var/lib/muobserve-collector` (state directory & WAL) and `/run/muobserve-collector` (Unix domain socket).
-- **Read-Only Access**: Strictly restricted to `/etc/muobserve-collector` (TLS credentials and configuration) and `/etc/ssl/certs` (system CA bundle).
+- **Read-Write Access**: Strictly restricted to `/var/lib/mu-observable-collector` (Phase 1 fallback: `/var/lib/muobserve-collector`, state directory & WAL) and `/run/mu-observable-collector` (Unix domain socket).
+- **Read-Only Access**: Strictly restricted to `/etc/mu-observable-collector` (Phase 1 fallback: `/etc/muobserve-collector`, TLS credentials and configuration) and `/etc/ssl/certs` (system CA bundle).
 - **Default Deny**: All other host directories (including `/home`, `/root`, `/bin`, and user repositories) are completely blocked from read and write access.
 
 ### 6.2 Host Resource Bounds

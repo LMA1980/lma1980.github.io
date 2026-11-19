@@ -10,7 +10,7 @@ ______________________________________________________________________
 
 ## 1. Purpose & System Context
 
-`action-runner-controller` is the coordination hub of the ActionRunner CI platform. It receives GitHub events, parses YAML workflow definitions (`.actionrunner/*.yml`), orchestrates DAG execution across distributed bare-metal workers, records telemetry in DuckDB, and generates real-time SVG status scorecards.
+`action-runner-controller` (`mu-ci-controller.service`, Phase 1 fallback `action-runner-controller.service`) is the coordination hub of the `mu-ci` (`ActionRunner`) CI platform. It receives GitHub events, parses YAML workflow definitions (`.muci/*.yml` / `.actionrunner/*.yml`), orchestrates DAG execution across distributed bare-metal workers, records telemetry in DuckDB, and generates real-time SVG status scorecards.
 
 ______________________________________________________________________
 

@@ -1,6 +1,6 @@
-# MuRegist Cargo Sparse Registry & Artifact Store Developer Guide
+# MuRegist (`mu-registry`) Cargo Sparse Registry & Artifact Store Developer Guide
 
-This guide details the architecture, client configuration, and API specifications for **MuRegist** (`AGPL-3.0-only`), the high-performance internal Cargo Sparse HTTP Registry and multi-ecosystem artifact repository.
+This guide details the architecture, client configuration, and API specifications for **MuRegist** (**`mu-registry`**, `mu-registry.service`, `AGPL-3.0-only`), the high-performance internal Cargo Sparse HTTP Registry and multi-ecosystem artifact repository.
 
 ______________________________________________________________________
 
@@ -129,7 +129,7 @@ ______________________________________________________________________
 Binary crate archives and integration bundles are stored in a two-tier fan-out directory structure keyed by the SHA-256 digest:
 
 ```
-/var/lib/muregist/storage/
+/var/lib/mu-registry/storage/
 └── blobs/
     └── sha256/
         ├── 9f/
@@ -145,7 +145,7 @@ Binary crate archives and integration bundles are stored in a two-tier fan-out d
 To guarantee data integrity during concurrent CI publishing:
 
 1. The server streams the inbound stream to a unique temporary file on the same filesystem:
-   `/var/lib/muregist/storage/tmp/.upload.<uuid>`
+   `/var/lib/mu-registry/storage/tmp/.upload.<uuid>`
 1. While streaming, the server updates an incremental SHA-256 hasher.
 1. Once stream EOF is reached, the server verifies the computed checksum matches the declared digest.
 1. The file is synced to disk via `fsync()`.
@@ -154,7 +154,7 @@ To guarantee data integrity during concurrent CI publishing:
 
 ### DuckDB Relational Metadata Catalog
 
-MuRegist persists catalog states in an embedded DuckDB database (`/var/lib/muregist/catalog/muregist.duckdb`). DuckDB eliminates SQLite database locking contention during multi-stage CI runs:
+`mu-registry` persists catalog states in an embedded DuckDB database (`/var/lib/mu-registry/catalog/muregist.duckdb`, Phase 1 fallback root: `/var/lib/muregist/`). DuckDB eliminates SQLite database locking contention during multi-stage CI runs:
 
 - **`crates`**: `id`, `name`, `created_at`, `owners`
 - **`versions`**: `id`, `crate_id`, `version`, `cksum`, `created_at`, `yanked`
